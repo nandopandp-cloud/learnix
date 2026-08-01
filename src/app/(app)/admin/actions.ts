@@ -287,6 +287,33 @@ export async function createInstructor(
   return { success: "Instrutor criado." };
 }
 
+export async function updateInstructor(
+  _prev: FormState,
+  formData: FormData,
+): Promise<FormState> {
+  await requireAdmin();
+
+  const id = String(formData.get("id") ?? "");
+  const name = String(formData.get("name") ?? "").trim();
+  if (!id) return { error: "Instrutor inválido." };
+  if (name.length < 2) return { error: "Informe o nome do instrutor." };
+
+  await db
+    .update(instructors)
+    .set({
+      name,
+      title: String(formData.get("title") ?? "").trim() || "Instrutor",
+      bio: String(formData.get("bio") ?? "").trim() || null,
+      avatarUrl: String(formData.get("avatarUrl") ?? "").trim() || null,
+    })
+    .where(eq(instructors.id, id));
+
+  revalidatePath("/admin/instrutores");
+  revalidatePath("/explorar");
+  revalidatePath("/cursos");
+  return { success: "Instrutor atualizado." };
+}
+
 export async function deleteInstructor(instructorId: string) {
   await requireAdmin();
   await db.delete(instructors).where(eq(instructors.id, instructorId));

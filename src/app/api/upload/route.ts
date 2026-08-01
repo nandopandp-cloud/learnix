@@ -2,7 +2,7 @@ import { handleUpload, type HandleUploadBody } from "@vercel/blob/client";
 import { NextResponse } from "next/server";
 
 import { getCurrentUser } from "@/lib/auth";
-import { UPLOAD_LIMITS, type UploadKind } from "@/lib/uploads";
+import { UPLOAD_LIMITS, type UploadClientPayload } from "@/lib/uploads";
 
 /**
  * Gera tokens de upload direto do navegador para o Vercel Blob.
@@ -22,12 +22,18 @@ export async function POST(request: Request) {
       body,
       request,
       onBeforeGenerateToken: async (pathname, clientPayload) => {
-        // Somente administradores podem enviar arquivos para a plataforma.
-        if (user.role !== "admin") {
+        const payload = JSON.parse(
+          (clientPayload as string | null) ?? "{}",
+        ) as Partial<UploadClientPayload>;
+        const kind = payload.kind ?? "image";
+        const scope = payload.scope ?? "admin";
+
+        // Conteúdo da plataforma (cursos, aulas, instrutores) exige admin;
+        // a foto do próprio perfil qualquer usuário autenticado pode enviar.
+        if (scope !== "self-avatar" && user.role !== "admin") {
           throw new Error("Apenas administradores podem enviar arquivos.");
         }
 
-        const kind = (clientPayload as UploadKind | null) ?? "image";
         const limits = UPLOAD_LIMITS[kind];
         if (!limits) throw new Error("Tipo de upload inválido.");
 
@@ -35,7 +41,7 @@ export async function POST(request: Request) {
           allowedContentTypes: limits.accept,
           maximumSizeInBytes: limits.maxBytes,
           addRandomSuffix: true,
-          tokenPayload: JSON.stringify({ userId: user.id, kind, pathname }),
+          tokenPayload: JSON.stringify({ userId: user.id, kind, scope, pathname }),
         };
       },
       onUploadCompleted: async () => {

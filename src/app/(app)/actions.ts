@@ -4,8 +4,30 @@ import { revalidatePath } from "next/cache";
 import { and, eq } from "drizzle-orm";
 
 import { db } from "@/db";
-import { enrollments, lessonProgress, lessons, notes, watchlist } from "@/db/schema";
+import {
+  enrollments,
+  lessonProgress,
+  lessons,
+  notes,
+  users,
+  watchlist,
+} from "@/db/schema";
 import { getCurrentUser } from "@/lib/auth";
+
+/** Atualiza a foto de perfil do usuário logado. */
+export async function updateAvatar(avatarUrl: string) {
+  const user = await getCurrentUser();
+  if (!user) return { error: "Não autenticado." };
+
+  await db
+    .update(users)
+    .set({ avatarUrl: avatarUrl.trim() || null })
+    .where(eq(users.id, user.id));
+
+  revalidatePath("/configuracoes");
+  revalidatePath("/inicio");
+  return { success: true };
+}
 
 /** Salva/remove um curso da lista do usuário. Retorna o novo estado. */
 export async function toggleWatchlist(courseId: string) {

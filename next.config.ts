@@ -2,12 +2,11 @@ import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
   images: {
-    remotePatterns: [
-      { protocol: "https", hostname: "images.unsplash.com" },
-      { protocol: "https", hostname: "randomuser.me" },
-      // Arquivos enviados pelo admin (thumbnails, backdrops, avatares, vídeos).
-      { protocol: "https", hostname: "*.public.blob.vercel-storage.com" },
-    ],
+    // O admin pode colar a URL de qualquer imagem (thumbnail, backdrop, avatar)
+    // além de enviar arquivos para o Vercel Blob — travar por allowlist de host
+    // quebra a otimização sempre que alguém usa um domínio novo. Como o campo
+    // já é de uso exclusivo de administradores, liberamos qualquer host HTTPS.
+    remotePatterns: [{ protocol: "https", hostname: "**" }],
   },
 };
 

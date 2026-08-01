@@ -2,6 +2,18 @@
 
 export type UploadKind = "image" | "video";
 
+/**
+ * Quem pode gerar o token de upload:
+ * - "admin": conteúdo da plataforma (cursos, aulas, instrutores) — só admins.
+ * - "self-avatar": foto do próprio perfil — qualquer usuário autenticado.
+ */
+export type UploadScope = "admin" | "self-avatar";
+
+export type UploadClientPayload = {
+  kind: UploadKind;
+  scope: UploadScope;
+};
+
 export const UPLOAD_LIMITS: Record<
   UploadKind,
   { maxBytes: number; accept: string[]; label: string }

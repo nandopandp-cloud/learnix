@@ -1,13 +1,12 @@
 import type { Metadata } from "next";
-import Image from "next/image";
 import { Crown, Mail, Shield, User as UserIcon } from "lucide-react";
 
 import { getCurrentUser } from "@/lib/auth";
-import { initials } from "@/lib/utils";
 import { PageHeader } from "@/components/app/page-header";
 import { Reveal } from "@/components/ui/reveal";
 import { Button } from "@/components/ui/button";
 import { logoutAction } from "@/app/(auth)/actions";
+import { AvatarForm } from "./avatar-form";
 
 export const metadata: Metadata = { title: "Configurações" };
 
@@ -29,24 +28,10 @@ export default async function ConfiguracoesPage() {
               Perfil
             </h2>
 
-            <div className="mt-5 flex items-center gap-4">
-              <span className="relative block h-16 w-16 shrink-0 overflow-hidden rounded-full bg-surface-2 ring-1 ring-white/10">
-                {user.avatarUrl ? (
-                  <Image
-                    src={user.avatarUrl}
-                    alt={user.name}
-                    fill
-                    sizes="64px"
-                    className="object-cover"
-                  />
-                ) : (
-                  <span className="flex h-full w-full items-center justify-center font-display text-lg font-semibold text-white">
-                    {initials(user.name)}
-                  </span>
-                )}
-              </span>
+            <div className="mt-5 flex items-start gap-4">
+              <AvatarForm defaultValue={user.avatarUrl} />
 
-              <div className="min-w-0">
+              <div className="min-w-0 pt-1">
                 <p className="font-display text-lg font-semibold text-white">
                   {user.name}
                 </p>
@@ -54,10 +39,6 @@ export default async function ConfiguracoesPage() {
                   {user.email}
                 </p>
               </div>
-
-              <Button variant="outline" size="sm" className="ml-auto shrink-0">
-                Editar perfil
-              </Button>
             </div>
 
             <dl className="mt-6 space-y-3 border-t border-white/[0.07] pt-5">

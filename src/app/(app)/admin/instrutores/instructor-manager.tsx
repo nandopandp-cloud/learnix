@@ -3,9 +3,14 @@
 import { useActionState, useState, useTransition } from "react";
 import { useFormStatus } from "react-dom";
 import Image from "next/image";
-import { Plus, Trash2, Loader2 } from "lucide-react";
+import { Plus, Trash2, Loader2, Pencil, X } from "lucide-react";
 
-import { createInstructor, deleteInstructor, type FormState } from "../actions";
+import {
+  createInstructor,
+  deleteInstructor,
+  updateInstructor,
+  type FormState,
+} from "../actions";
 import { initials } from "@/lib/utils";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { FormMessage } from "@/components/ui/form-controls";
@@ -20,7 +25,7 @@ type Row = {
   courseCount: number;
 };
 
-function SubmitButton() {
+function SubmitButton({ label }: { label: string }) {
   const { pending } = useFormStatus();
   return (
     <button
@@ -33,7 +38,7 @@ function SubmitButton() {
       ) : (
         <Plus className="h-4 w-4" />
       )}
-      Criar instrutor
+      {label}
     </button>
   );
 }
@@ -81,7 +86,7 @@ export function InstructorManager({ instructors }: { instructors: Row[] }) {
           <FormMessage error={state?.error} success={state?.success} />
 
           <div className="flex justify-end">
-            <SubmitButton />
+            <SubmitButton label="Criar instrutor" />
           </div>
         </form>
       </section>
@@ -96,8 +101,80 @@ export function InstructorManager({ instructors }: { instructors: Row[] }) {
 }
 
 function InstructorRow({ instructor }: { instructor: Row }) {
+  const [editing, setEditing] = useState(false);
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [pending, startTransition] = useTransition();
+  const [state, formAction] = useActionState<FormState, FormData>(
+    updateInstructor,
+    undefined,
+  );
+
+  if (editing) {
+    return (
+      <li className="rounded-xl bg-surface-1 p-4 ring-1 ring-white/[0.07]">
+        <form action={formAction} className="space-y-3">
+          <input type="hidden" name="id" value={instructor.id} />
+
+          <div className="flex items-center justify-between">
+            <h3 className="text-[0.9rem] font-medium text-white">
+              Editar instrutor
+            </h3>
+            <button
+              type="button"
+              onClick={() => setEditing(false)}
+              aria-label="Cancelar edição"
+              className="rounded p-1.5 text-neutral-500 transition hover:bg-white/5 hover:text-white"
+            >
+              <X className="h-4 w-4" />
+            </button>
+          </div>
+
+          <div className="grid gap-3 sm:grid-cols-2">
+            <input
+              name="name"
+              defaultValue={instructor.name}
+              placeholder="Nome completo"
+              required
+              className="h-11 rounded-lg bg-surface-2 px-3.5 text-[0.88rem] text-white ring-1 ring-white/10 outline-none transition placeholder:text-neutral-600 focus:ring-2 focus:ring-brand/70"
+            />
+            <input
+              name="title"
+              defaultValue={instructor.title}
+              placeholder="Cargo (ex.: Designer de Produto)"
+              className="h-11 rounded-lg bg-surface-2 px-3.5 text-[0.88rem] text-white ring-1 ring-white/10 outline-none transition placeholder:text-neutral-600 focus:ring-2 focus:ring-brand/70"
+            />
+            <FileUpload
+              label="Avatar"
+              kind="image"
+              name="avatarUrl"
+              defaultValue={instructor.avatarUrl}
+              className="sm:col-span-2"
+            />
+            <textarea
+              name="bio"
+              defaultValue={instructor.bio ?? ""}
+              rows={3}
+              placeholder="Biografia"
+              className="resize-y rounded-lg bg-surface-2 px-3.5 py-2.5 text-[0.88rem] text-white ring-1 ring-white/10 outline-none transition placeholder:text-neutral-600 focus:ring-2 focus:ring-brand/70 sm:col-span-2"
+            />
+          </div>
+
+          <FormMessage error={state?.error} success={state?.success} />
+
+          <div className="flex justify-end gap-2">
+            <button
+              type="button"
+              onClick={() => setEditing(false)}
+              className="rounded-lg px-3.5 py-2 text-[0.82rem] text-neutral-400 transition hover:bg-white/5 hover:text-white"
+            >
+              Cancelar
+            </button>
+            <SubmitButton label="Salvar alterações" />
+          </div>
+        </form>
+      </li>
+    );
+  }
 
   return (
     <li className="flex items-center gap-3.5 rounded-xl bg-surface-1 px-4 py-3.5 ring-1 ring-white/[0.07] transition hover:ring-white/15">
@@ -126,6 +203,14 @@ function InstructorRow({ instructor }: { instructor: Row }) {
           {instructor.courseCount === 1 ? "curso" : "cursos"}
         </span>
       </span>
+
+      <button
+        onClick={() => setEditing(true)}
+        aria-label={`Editar ${instructor.name}`}
+        className="shrink-0 rounded-lg p-2 text-neutral-500 transition hover:bg-white/[0.06] hover:text-white"
+      >
+        <Pencil className="h-4 w-4" />
+      </button>
 
       <button
         onClick={() => setConfirmOpen(true)}
