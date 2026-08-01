@@ -24,6 +24,7 @@ import {
 import { cn, formatTimecode } from "@/lib/utils";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { FormMessage } from "@/components/ui/form-controls";
+import { FileUpload } from "@/components/ui/file-upload";
 import type { Module, Lesson } from "@/db/schema";
 
 export function CurriculumEditor({
@@ -268,12 +269,18 @@ function LessonRow({ lesson, courseId }: { lesson: Lesson; courseId: string }) {
             required
             className="h-10 w-full rounded-lg bg-surface-1 px-3 text-[0.86rem] text-white ring-1 ring-white/10 outline-none focus:ring-2 focus:ring-brand/70"
           />
-          <input
+          <FileUpload
+            label="Vídeo da aula"
+            kind="video"
             name="videoUrl"
-            type="url"
-            defaultValue={lesson.videoUrl ?? ""}
-            placeholder="URL do vídeo (mp4 ou HLS)"
-            className="h-10 w-full rounded-lg bg-surface-1 px-3 text-[0.86rem] text-white ring-1 ring-white/10 outline-none focus:ring-2 focus:ring-brand/70"
+            defaultValue={lesson.videoUrl}
+          />
+          <FileUpload
+            label="Thumbnail da aula"
+            kind="image"
+            name="thumbnailUrl"
+            defaultValue={lesson.thumbnailUrl}
+            hint="Opcional — usa o backdrop do curso quando vazio."
           />
           <textarea
             name="description"
@@ -424,11 +431,12 @@ function NewLessonForm({
           autoFocus
           className="h-10 w-full rounded-lg bg-surface-1 px-3 text-[0.86rem] text-white ring-1 ring-white/10 outline-none focus:ring-2 focus:ring-brand/70"
         />
-        <input
-          name="videoUrl"
-          type="url"
-          placeholder="URL do vídeo (mp4 ou HLS)"
-          className="h-10 w-full rounded-lg bg-surface-1 px-3 text-[0.86rem] text-white ring-1 ring-white/10 outline-none focus:ring-2 focus:ring-brand/70"
+        <FileUpload label="Vídeo da aula" kind="video" name="videoUrl" />
+        <FileUpload
+          label="Thumbnail da aula"
+          kind="image"
+          name="thumbnailUrl"
+          hint="Opcional — usa o backdrop do curso quando vazio."
         />
         <textarea
           name="description"

@@ -55,10 +55,8 @@ export default async function CoursePage({
 
   return (
     <div className="flex">
-      {/* Índice de módulos (desktop) */}
-      <aside className="sticky top-[var(--topbar-h)] hidden h-[calc(100dvh-var(--topbar-h))] w-[16.5rem] shrink-0 overflow-y-auto thin-scrollbar border-r border-white/[0.07] xl:block">
-        <ModuleSidebar course={course} />
-      </aside>
+      {/* Índice de módulos (desktop) — recolhível, controla a própria largura */}
+      <ModuleSidebar course={course} />
 
       <div className="min-w-0 flex-1">
         {/* ------------------------------ hero ------------------------------ */}

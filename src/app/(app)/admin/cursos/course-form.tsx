@@ -6,6 +6,7 @@ import { Loader2, Save } from "lucide-react";
 
 import { upsertCourse, type FormState } from "../actions";
 import { Button } from "@/components/ui/button";
+import { FileUpload } from "@/components/ui/file-upload";
 import {
   TextInput,
   TextArea,
@@ -149,20 +150,18 @@ export function CourseForm({
         </h2>
 
         <div className="grid gap-4 sm:grid-cols-2">
-          <TextInput
-            label="Thumbnail (URL)"
+          <FileUpload
+            label="Thumbnail"
+            kind="image"
             name="thumbnailUrl"
-            type="url"
-            defaultValue={course?.thumbnailUrl ?? ""}
-            placeholder="https://…"
+            defaultValue={course?.thumbnailUrl}
             hint="Imagem 16:9 usada nos cards."
           />
-          <TextInput
-            label="Backdrop (URL)"
+          <FileUpload
+            label="Backdrop"
+            kind="image"
             name="backdropUrl"
-            type="url"
-            defaultValue={course?.backdropUrl ?? ""}
-            placeholder="https://…"
+            defaultValue={course?.backdropUrl}
             hint="Imagem larga do topo da página do curso."
           />
           <TextArea

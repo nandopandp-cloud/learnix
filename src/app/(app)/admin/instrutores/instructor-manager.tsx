@@ -9,6 +9,7 @@ import { createInstructor, deleteInstructor, type FormState } from "../actions";
 import { initials } from "@/lib/utils";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { FormMessage } from "@/components/ui/form-controls";
+import { FileUpload } from "@/components/ui/file-upload";
 
 type Row = {
   id: string;
@@ -63,11 +64,11 @@ export function InstructorManager({ instructors }: { instructors: Row[] }) {
               placeholder="Cargo (ex.: Designer de Produto)"
               className="h-11 rounded-lg bg-surface-2 px-3.5 text-[0.88rem] text-white ring-1 ring-white/10 outline-none transition placeholder:text-neutral-600 focus:ring-2 focus:ring-brand/70"
             />
-            <input
+            <FileUpload
+              label="Avatar"
+              kind="image"
               name="avatarUrl"
-              type="url"
-              placeholder="URL do avatar"
-              className="h-11 rounded-lg bg-surface-2 px-3.5 text-[0.88rem] text-white ring-1 ring-white/10 outline-none transition placeholder:text-neutral-600 focus:ring-2 focus:ring-brand/70 sm:col-span-2"
+              className="sm:col-span-2"
             />
             <textarea
               name="bio"

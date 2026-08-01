@@ -181,6 +181,7 @@ export async function createLesson(
       slug: `${next + 1}-${slugify(title)}`,
       description: String(formData.get("description") ?? "").trim() || null,
       videoUrl: String(formData.get("videoUrl") ?? "").trim() || null,
+      thumbnailUrl: String(formData.get("thumbnailUrl") ?? "").trim() || null,
       duration: Math.round(minutes * 60),
       isFree: formData.get("isFree") === "on",
       sortOrder: next,
@@ -214,6 +215,7 @@ export async function updateLesson(
       title,
       description: String(formData.get("description") ?? "").trim() || null,
       videoUrl: String(formData.get("videoUrl") ?? "").trim() || null,
+      thumbnailUrl: String(formData.get("thumbnailUrl") ?? "").trim() || null,
       duration: Math.round(minutes * 60),
       isFree: formData.get("isFree") === "on",
     })

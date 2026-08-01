@@ -40,10 +40,12 @@ export function Sidebar({
   isPremium,
   isAdmin,
   onNavigate,
+  collapsed = false,
 }: {
   isPremium: boolean;
   isAdmin: boolean;
   onNavigate?: () => void;
+  collapsed?: boolean;
 }) {
   const pathname = usePathname();
 
@@ -60,6 +62,7 @@ export function Sidebar({
               active={isActive(item.href)}
               delay={i * 0.03}
               onNavigate={onNavigate}
+              collapsed={collapsed}
             />
           </li>
         ))}
@@ -74,6 +77,7 @@ export function Sidebar({
               {...item}
               active={isActive(item.href)}
               onNavigate={onNavigate}
+              collapsed={collapsed}
             />
           </li>
         ))}
@@ -85,12 +89,13 @@ export function Sidebar({
               icon={Shield}
               active={isActive("/admin")}
               onNavigate={onNavigate}
+              collapsed={collapsed}
             />
           </li>
         )}
       </ul>
 
-      {!isPremium && (
+      {!isPremium && !collapsed && (
         <div className="mt-auto pt-6">
           <div className="border-gradient relative overflow-hidden rounded-xl bg-surface-1 p-5">
             <div className="pointer-events-none absolute -top-14 -right-14 h-32 w-32 rounded-full bg-brand/20 blur-3xl" />
@@ -113,6 +118,19 @@ export function Sidebar({
           </div>
         </div>
       )}
+
+      {!isPremium && collapsed && (
+        <div className="mt-auto flex justify-center pt-6">
+          <Link
+            href="/premium"
+            onClick={onNavigate}
+            title="Seja Premium"
+            className="flex h-10 w-10 items-center justify-center rounded-full bg-brand/15 text-brand ring-1 ring-brand/25 transition hover:bg-brand/25"
+          >
+            <Crown className="h-[1.1rem] w-[1.1rem]" />
+          </Link>
+        </div>
+      )}
     </nav>
   );
 }
@@ -124,6 +142,7 @@ function SidebarLink({
   active,
   delay = 0,
   onNavigate,
+  collapsed,
 }: {
   href: string;
   label: string;
@@ -131,14 +150,17 @@ function SidebarLink({
   active: boolean;
   delay?: number;
   onNavigate?: () => void;
+  collapsed?: boolean;
 }) {
   return (
     <Link
       href={href}
       onClick={onNavigate}
+      title={collapsed ? label : undefined}
       style={{ "--d": `${delay}s` } as React.CSSProperties}
       className={cn(
         "group relative flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm transition-all duration-300",
+        collapsed && "justify-center px-0",
         active
           ? "bg-brand/[0.12] font-medium text-white"
           : "text-neutral-400 hover:bg-white/[0.05] hover:text-white",
@@ -157,7 +179,7 @@ function SidebarLink({
           active ? "text-brand" : "text-neutral-500 group-hover:text-neutral-300",
         )}
       />
-      {label}
+      {!collapsed && label}
     </Link>
   );
 }
