@@ -1,0 +1,287 @@
+@import "tailwindcss";
+
+/* =========================================================================
+   LEARNIX — Design System
+   Linguagem visual derivada de assets/animations-gemini + assets/instagram-slides:
+   base monocromática quase preta, vidro fosco, entradas com blur+translate,
+   flashlight seguindo o mouse e beams cônicos. O acento é o vermelho da marca.
+   ========================================================================= */
+
+@theme {
+  /* Marca */
+  --color-brand: #e50914;
+  --color-brand-bright: #ff2a36;
+  --color-brand-deep: #b20710;
+
+  /* Superfícies — do mais profundo ao mais elevado */
+  --color-void: #050505;
+  --color-surface: #0a0a0a;
+  --color-surface-1: #101012;
+  --color-surface-2: #16161a;
+  --color-surface-3: #1e1e23;
+
+  --color-line: rgba(255, 255, 255, 0.08);
+  --color-line-strong: rgba(255, 255, 255, 0.14);
+
+  --font-sans: var(--font-inter), system-ui, sans-serif;
+  --font-display: var(--font-display), var(--font-inter), sans-serif;
+  --font-mono: var(--font-mono-code), ui-monospace, monospace;
+
+  /* Curvas — a "física" dos assets de referência */
+  --ease-out-expo: cubic-bezier(0.16, 1, 0.3, 1);
+  --ease-out-quint: cubic-bezier(0.22, 1, 0.36, 1);
+
+  --animate-marquee: marquee 40s linear infinite;
+  --animate-shimmer: shimmer 1.5s infinite;
+}
+
+:root {
+  color-scheme: dark;
+  --background: var(--color-void);
+  --foreground: #ededed;
+  /* Altura da topbar, usada para offsets de scroll e sticky */
+  --topbar-h: 4.5rem;
+}
+
+* {
+  border-color: var(--color-line);
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  background: var(--color-void);
+  color: var(--foreground);
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+::selection {
+  background: rgb(229 9 20 / 0.3);
+  color: #fff;
+}
+
+/* ------------------------------- scrollbars ------------------------------- */
+
+.hide-scrollbar {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+.hide-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+
+.thin-scrollbar {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255, 255, 255, 0.16) transparent;
+}
+.thin-scrollbar::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+.thin-scrollbar::-webkit-scrollbar-track {
+  background: transparent;
+}
+.thin-scrollbar::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.16);
+  border-radius: 999px;
+}
+.thin-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.28);
+}
+
+/* ------------------------------- animações -------------------------------- */
+
+/* Entrada padrão dos assets de referência: sobe, revela e sai do blur. */
+@keyframes animationIn {
+  0% {
+    opacity: 0;
+    transform: translateY(24px);
+    filter: blur(8px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+    filter: blur(0);
+  }
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes marquee {
+  0% {
+    transform: translateX(0);
+  }
+  100% {
+    transform: translateX(-50%);
+  }
+}
+
+@keyframes shimmer {
+  from {
+    transform: translateX(-100%) skewX(-15deg);
+  }
+  to {
+    transform: translateX(200%) skewX(-15deg);
+  }
+}
+
+@keyframes textSlide {
+  0% {
+    transform: translateY(110%);
+    opacity: 0;
+  }
+  100% {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+@keyframes pulseRing {
+  0% {
+    box-shadow: 0 0 0 0 rgb(229 9 20 / 0.45);
+  }
+  70% {
+    box-shadow: 0 0 0 14px rgb(229 9 20 / 0);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgb(229 9 20 / 0);
+  }
+}
+
+/* Aplica a entrada com delay escalonado via --d */
+.anim-in {
+  animation: animationIn 0.8s var(--ease-out-expo) both;
+  animation-delay: var(--d, 0s);
+}
+
+/* Revelação no viewport: pausada até o IntersectionObserver liberar. */
+.animate-on-scroll {
+  animation-play-state: paused !important;
+}
+.animate-on-scroll.animate {
+  animation-play-state: running !important;
+}
+
+.text-clip-anim > span {
+  display: inline-block;
+  animation: textSlide 0.9s var(--ease-out-expo) both;
+}
+
+/* ------------------------------- utilitários ------------------------------ */
+
+.glass {
+  background: rgba(16, 16, 18, 0.72);
+  backdrop-filter: blur(20px) saturate(140%);
+  -webkit-backdrop-filter: blur(20px) saturate(140%);
+}
+
+.glass-strong {
+  background: rgba(5, 5, 5, 0.86);
+  backdrop-filter: blur(24px) saturate(140%);
+  -webkit-backdrop-filter: blur(24px) saturate(140%);
+}
+
+/* Flashlight: gradiente radial que segue o mouse (via --mouse-x/y no JS). */
+.flashlight::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(
+    420px circle at var(--mouse-x, 50%) var(--mouse-y, 50%),
+    rgba(255, 255, 255, 0.09),
+    transparent 42%
+  );
+  opacity: 0;
+  transition: opacity 0.45s var(--ease-out-quint);
+  pointer-events: none;
+  z-index: 3;
+}
+.flashlight:hover::before {
+  opacity: 1;
+}
+
+/* Borda de 1px com gradiente, via mask-composite (padrão dos assets). */
+.border-gradient {
+  position: relative;
+}
+.border-gradient::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  padding: 1px;
+  border-radius: inherit;
+  background: var(
+    --border-gradient,
+    linear-gradient(
+      135deg,
+      rgba(255, 255, 255, 0.16),
+      rgba(255, 255, 255, 0.02)
+    )
+  );
+  -webkit-mask:
+    linear-gradient(#fff 0 0) content-box,
+    linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  pointer-events: none;
+}
+
+.grid-pattern {
+  background-image: radial-gradient(
+    circle at 1px 1px,
+    rgba(255, 255, 255, 0.08) 1px,
+    transparent 0
+  );
+  background-size: 26px 26px;
+}
+
+/* Máscara alfa nas laterais de carrosséis e marquees. */
+.mask-x {
+  mask-image: linear-gradient(
+    90deg,
+    transparent,
+    #000 3%,
+    #000 97%,
+    transparent
+  );
+  -webkit-mask-image: linear-gradient(
+    90deg,
+    transparent,
+    #000 3%,
+    #000 97%,
+    transparent
+  );
+}
+
+.pulse-ring {
+  animation: pulseRing 2.4s ease-out infinite;
+}
+
+/* Foco visível e consistente em toda a plataforma. */
+:where(a, button, input, textarea, select, [tabindex]):focus-visible {
+  outline: 2px solid var(--color-brand);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
