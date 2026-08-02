@@ -25,42 +25,60 @@ const TABS = [
   "Perguntas",
 ] as const;
 
-export function CourseTabs({ course }: { course: CourseDetail }) {
-  const [active, setActive] = useState<(typeof TABS)[number]>("Overview");
+type Tab = (typeof TABS)[number];
 
+/**
+ * Navegação das abas, separada do conteúdo para poder ocupar a largura
+ * total da página (acima do grid conteúdo + aside) — assim o card do
+ * instrutor ao lado começa alinhado ao título da aba, não à navegação.
+ */
+export function CourseTabNav({
+  active,
+  onChange,
+}: {
+  active: Tab;
+  onChange: (tab: Tab) => void;
+}) {
   return (
-    <div>
-      {/* Navegação das abas */}
-      <div className="hide-scrollbar mb-7 flex gap-1 overflow-x-auto border-b border-white/[0.07]">
-        {TABS.map((tab) => (
-          <button
-            key={tab}
-            onClick={() => setActive(tab)}
+    <div className="hide-scrollbar flex gap-1 overflow-x-auto border-b border-white/[0.07]">
+      {TABS.map((tab) => (
+        <button
+          key={tab}
+          onClick={() => onChange(tab)}
+          className={cn(
+            "relative shrink-0 px-4 py-3 text-[0.88rem] transition-colors duration-300",
+            active === tab
+              ? "font-medium text-white"
+              : "text-neutral-500 hover:text-neutral-300",
+          )}
+        >
+          {tab}
+          <span
             className={cn(
-              "relative shrink-0 px-4 py-3 text-[0.88rem] transition-colors duration-300",
-              active === tab
-                ? "font-medium text-white"
-                : "text-neutral-500 hover:text-neutral-300",
+              "absolute right-3 -bottom-px left-3 h-[2px] rounded-full bg-brand transition-all duration-300 ease-[var(--ease-out-quint)]",
+              active === tab ? "opacity-100" : "scale-x-0 opacity-0",
             )}
-          >
-            {tab}
-            <span
-              className={cn(
-                "absolute right-3 -bottom-px left-3 h-[2px] rounded-full bg-brand transition-all duration-300 ease-[var(--ease-out-quint)]",
-                active === tab ? "opacity-100" : "scale-x-0 opacity-0",
-              )}
-            />
-          </button>
-        ))}
-      </div>
+          />
+        </button>
+      ))}
+    </div>
+  );
+}
 
-      <div key={active} style={{ animation: "animationIn 0.5s var(--ease-out-expo) both" }}>
-        {active === "Overview" && <OverviewTab course={course} />}
-        {active === "Conteúdo do curso" && <ContentTab course={course} />}
-        {active === "Materiais" && <MaterialsTab course={course} />}
-        {active === "Avaliações" && <ReviewsTab course={course} />}
-        {active === "Perguntas" && <QuestionsTab />}
-      </div>
+export function CourseTabs({
+  course,
+  active,
+}: {
+  course: CourseDetail;
+  active: Tab;
+}) {
+  return (
+    <div key={active} style={{ animation: "animationIn 0.5s var(--ease-out-expo) both" }}>
+      {active === "Overview" && <OverviewTab course={course} />}
+      {active === "Conteúdo do curso" && <ContentTab course={course} />}
+      {active === "Materiais" && <MaterialsTab course={course} />}
+      {active === "Avaliações" && <ReviewsTab course={course} />}
+      {active === "Perguntas" && <QuestionsTab />}
     </div>
   );
 }

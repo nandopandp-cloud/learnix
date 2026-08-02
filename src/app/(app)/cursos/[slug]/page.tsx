@@ -22,7 +22,7 @@ import { formatDuration, formatCount } from "@/lib/utils";
 import { Reveal } from "@/components/ui/reveal";
 import { Button } from "@/components/ui/button";
 import { WatchlistButton } from "@/components/course/watchlist-button";
-import { CourseTabs } from "@/components/course/course-tabs";
+import { CourseOverviewSection } from "@/components/course/course-overview-section";
 import { ModuleSidebar } from "@/components/course/module-sidebar";
 
 export async function generateMetadata({
@@ -168,20 +168,19 @@ export default async function CoursePage({
         </section>
 
         {/* ------------------------- conteúdo + aside ------------------------ */}
-        <div className="grid gap-8 px-4 py-8 lg:px-10 xl:grid-cols-[1fr_20rem]">
-          <div className="min-w-0">
-            <CourseTabs course={course} />
-          </div>
-
-          <aside className="space-y-5">
-            <Reveal delay={0.2}>
-              <InstructorPanel course={course} />
-            </Reveal>
-            <Reveal delay={0.3}>
-              <CourseInfoPanel course={course} />
-            </Reveal>
-          </aside>
-        </div>
+        <CourseOverviewSection
+          course={course}
+          aside={
+            <>
+              <Reveal delay={0.2}>
+                <InstructorPanel course={course} />
+              </Reveal>
+              <Reveal delay={0.3}>
+                <CourseInfoPanel course={course} />
+              </Reveal>
+            </>
+          }
+        />
       </div>
     </div>
   );
@@ -223,10 +222,6 @@ function InstructorPanel({ course }: { course: Course }) {
           {course.instructorBio}
         </p>
       )}
-
-      <Button variant="outline" size="sm" className="mt-5 w-full">
-        Ver perfil do instrutor
-      </Button>
     </div>
   );
 }
