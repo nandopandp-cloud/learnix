@@ -8,6 +8,7 @@ import {
   courses,
   enrollments,
   instructors,
+  lessonLikes,
   lessonProgress,
   lessons,
   materials,
@@ -357,12 +358,27 @@ export async function getLessonView(
       )!,
     );
 
+  const [{ likeCount }] = await db
+    .select({ likeCount: sql<number>`count(*)::int` })
+    .from(lessonLikes)
+    .where(eq(lessonLikes.lessonId, current.id));
+
+  const [likedRow] = await db
+    .select({ id: lessonLikes.id })
+    .from(lessonLikes)
+    .where(
+      and(eq(lessonLikes.userId, userId), eq(lessonLikes.lessonId, current.id)),
+    )
+    .limit(1);
+
   return {
     course,
     lesson: current,
     materials: lessonMaterials,
     position: progress?.positionSeconds ?? 0,
     completed: progress?.completed ?? false,
+    likeCount,
+    liked: Boolean(likedRow),
     prev,
     next,
     index,

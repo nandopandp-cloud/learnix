@@ -25,6 +25,18 @@ const SPEEDS = [0.5, 0.75, 1, 1.25, 1.5, 1.75, 2];
 /** Marca a aula como concluída ao passar deste ponto. */
 const COMPLETE_THRESHOLD = 0.92;
 
+/** Rótulo popular de resolução a partir das dimensões reais do vídeo carregado. */
+function resolutionLabel(w: number, h: number) {
+  const shortSide = Math.min(w, h);
+  if (shortSide >= 2160) return "4K";
+  if (shortSide >= 1440) return "1440p";
+  if (shortSide >= 1080) return "1080p";
+  if (shortSide >= 720) return "720p";
+  if (shortSide >= 480) return "480p";
+  if (shortSide >= 360) return "360p";
+  return `${shortSide}p`;
+}
+
 export function VideoPlayer({
   src,
   poster,
@@ -59,9 +71,13 @@ export function VideoPlayer({
   const [speed, setSpeed] = useState(1);
   const [fullscreen, setFullscreen] = useState(false);
   const [showControls, setShowControls] = useState(true);
+  const [showSpeedMenu, setShowSpeedMenu] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
   const [captions, setCaptions] = useState(false);
   const [ended, setEnded] = useState(false);
+  const [videoSize, setVideoSize] = useState<{ w: number; h: number } | null>(
+    null,
+  );
 
   /** Guarda o progresso mais recente sem re-renderizar o player. */
   const completedRef = useRef(initiallyCompleted);
@@ -119,11 +135,16 @@ export function VideoPlayer({
     setShowControls(true);
     if (hideTimer.current) clearTimeout(hideTimer.current);
     hideTimer.current = setTimeout(() => {
-      if (videoRef.current && !videoRef.current.paused && !showSettings) {
+      if (
+        videoRef.current &&
+        !videoRef.current.paused &&
+        !showSettings &&
+        !showSpeedMenu
+      ) {
         setShowControls(false);
       }
     }, 2800);
-  }, [showSettings]);
+  }, [showSettings, showSpeedMenu]);
 
   useEffect(() => {
     return () => {
@@ -269,8 +290,12 @@ export function VideoPlayer({
         onWaiting={() => setWaiting(true)}
         onPlaying={() => setWaiting(false)}
         onLoadedMetadata={(e) => {
-          setDuration(e.currentTarget.duration);
+          const video = e.currentTarget;
+          setDuration(video.duration);
           setWaiting(false);
+          if (video.videoWidth && video.videoHeight) {
+            setVideoSize({ w: video.videoWidth, h: video.videoHeight });
+          }
         }}
         onTimeUpdate={(e) => {
           const video = e.currentTarget;
@@ -453,17 +478,20 @@ export function VideoPlayer({
           </span>
 
           <div className="ml-auto flex items-center gap-1.5 sm:gap-2.5">
-            {/* Velocidade */}
+            {/* Velocidade de reprodução */}
             <div className="relative">
               <button
-                onClick={() => setShowSettings((s) => !s)}
+                onClick={() => {
+                  setShowSpeedMenu((s) => !s);
+                  setShowSettings(false);
+                }}
                 aria-label="Velocidade de reprodução"
                 className="rounded px-2 py-1 font-mono text-[0.78rem] text-white/90 transition hover:bg-white/15 hover:text-white"
               >
                 {speed}x
               </button>
 
-              {showSettings && (
+              {showSpeedMenu && (
                 <div
                   className="glass absolute right-0 bottom-full mb-2 w-32 overflow-hidden rounded-lg ring-1 ring-white/15"
                   style={{
@@ -479,7 +507,7 @@ export function VideoPlayer({
                       onClick={() => {
                         setSpeed(s);
                         if (videoRef.current) videoRef.current.playbackRate = s;
-                        setShowSettings(false);
+                        setShowSpeedMenu(false);
                       }}
                       className={cn(
                         "flex w-full items-center justify-between px-3 py-2 text-left text-[0.8rem] transition",
@@ -506,13 +534,47 @@ export function VideoPlayer({
               <Subtitles className="h-[1.15rem] w-[1.15rem]" />
             </ControlButton>
 
-            <ControlButton
-              onClick={() => setShowSettings((s) => !s)}
-              label="Configurações"
-              className="hidden sm:flex"
-            >
-              <Settings className="h-[1.15rem] w-[1.15rem]" />
-            </ControlButton>
+            {/* Qualidade: mostra a resolução real do arquivo, sem prometer trocar de fonte. */}
+            <div className="relative">
+              <ControlButton
+                onClick={() => {
+                  setShowSettings((s) => !s);
+                  setShowSpeedMenu(false);
+                }}
+                label="Qualidade do vídeo"
+                className="hidden sm:flex"
+              >
+                <Settings className="h-[1.15rem] w-[1.15rem]" />
+              </ControlButton>
+
+              {showSettings && (
+                <div
+                  className="glass absolute right-0 bottom-full mb-2 w-44 overflow-hidden rounded-lg ring-1 ring-white/15"
+                  style={{
+                    animation: "animationIn 0.25s var(--ease-out-expo) both",
+                  }}
+                >
+                  <p className="border-b border-white/10 px-3 py-2 text-[0.68rem] tracking-wider text-neutral-400 uppercase">
+                    Qualidade
+                  </p>
+                  <div className="flex items-center justify-between px-3 py-2.5 text-[0.8rem] text-neutral-300">
+                    <span>
+                      {videoSize
+                        ? resolutionLabel(videoSize.w, videoSize.h)
+                        : "Carregando…"}
+                    </span>
+                    <span className="rounded bg-brand/15 px-1.5 py-0.5 text-[0.65rem] text-brand">
+                      Auto
+                    </span>
+                  </div>
+                  {videoSize && (
+                    <p className="border-t border-white/10 px-3 py-2 text-[0.68rem] text-neutral-500">
+                      {videoSize.w}×{videoSize.h}
+                    </p>
+                  )}
+                </div>
+              )}
+            </div>
 
             <ControlButton
               onClick={() => {

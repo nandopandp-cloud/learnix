@@ -22,6 +22,8 @@ export function WatchScreen({
   materials,
   position,
   completed,
+  likeCount,
+  liked,
   nextHref,
 }: {
   course: CourseDetail;
@@ -29,6 +31,8 @@ export function WatchScreen({
   materials: Material[];
   position: number;
   completed: boolean;
+  likeCount: number;
+  liked: boolean;
   nextHref: string | null;
 }) {
   const [collapsed, setCollapsed] = useState(false);
@@ -57,6 +61,8 @@ export function WatchScreen({
           lesson={lesson}
           materials={materials}
           completed={completed}
+          likeCount={likeCount}
+          liked={liked}
         />
       </div>
 

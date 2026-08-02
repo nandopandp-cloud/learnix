@@ -4,17 +4,17 @@ import { useState, useTransition } from "react";
 import Image from "next/image";
 import {
   ThumbsUp,
-  MessageSquare,
   Bookmark,
   CheckCircle2,
   Circle,
   FileText,
   Download,
   Loader2,
+  ChevronDown,
 } from "lucide-react";
 
 import { cn, formatCount } from "@/lib/utils";
-import { toggleLessonComplete } from "@/app/(app)/actions";
+import { toggleLessonComplete, toggleLessonLike } from "@/app/(app)/actions";
 import { Button } from "@/components/ui/button";
 import { NotesPanel } from "./notes-panel";
 import type { CourseDetail } from "@/lib/queries";
@@ -29,16 +29,22 @@ export function LessonPanel({
   lesson,
   materials,
   completed,
+  likeCount,
+  liked: initiallyLiked,
 }: {
   course: CourseDetail;
   lesson: Lesson;
   materials: Material[];
   completed: boolean;
+  likeCount: number;
+  liked: boolean;
 }) {
   const [active, setActive] = useState<(typeof TABS)[number]>("Sobre a aula");
   const [done, setDone] = useState(completed);
   const [pending, startTransition] = useTransition();
-  const [liked, setLiked] = useState(false);
+  const [liked, setLiked] = useState(initiallyLiked);
+  const [likes, setLikes] = useState(likeCount);
+  const [likePending, startLikeTransition] = useTransition();
   const [saved, setSaved] = useState(false);
 
   const onToggleComplete = () => {
@@ -46,6 +52,17 @@ export function LessonPanel({
     startTransition(async () => {
       const result = await toggleLessonComplete(lesson.id, course.id);
       setDone(result.completed);
+    });
+  };
+
+  const onToggleLike = () => {
+    // Otimista: reflete na hora, corrige com a contagem real do servidor.
+    setLiked((l) => !l);
+    setLikes((n) => (liked ? n - 1 : n + 1));
+    startLikeTransition(async () => {
+      const result = await toggleLessonLike(lesson.id);
+      setLiked(result.liked);
+      setLikes(result.count);
     });
   };
 
@@ -67,7 +84,8 @@ export function LessonPanel({
 
           <div className="mt-5 flex flex-wrap items-center gap-x-5 gap-y-3">
             <button
-              onClick={() => setLiked((l) => !l)}
+              onClick={onToggleLike}
+              disabled={likePending}
               className={cn(
                 "flex items-center gap-2 text-[0.83rem] transition-colors",
                 liked ? "text-brand" : "text-neutral-400 hover:text-white",
@@ -76,13 +94,8 @@ export function LessonPanel({
               <ThumbsUp
                 className={cn("h-[1.05rem] w-[1.05rem]", liked && "fill-current")}
               />
-              {formatCount(1200 + (liked ? 1 : 0))}
+              {formatCount(likes)}
             </button>
-
-            <span className="flex items-center gap-2 text-[0.83rem] text-neutral-400">
-              <MessageSquare className="h-[1.05rem] w-[1.05rem]" />
-              128 comentários
-            </span>
 
             <button
               onClick={() => setSaved((s) => !s)}
@@ -117,38 +130,7 @@ export function LessonPanel({
         </div>
 
         {/* Cartão do instrutor */}
-        <div className="h-fit rounded-xl bg-surface-1 p-4 ring-1 ring-white/[0.07]">
-          <div className="flex items-center gap-3">
-            <span className="relative block h-11 w-11 shrink-0 overflow-hidden rounded-full bg-surface-2 ring-1 ring-white/10">
-              {course.instructorAvatar && (
-                <Image
-                  src={course.instructorAvatar}
-                  alt={course.instructorName ?? ""}
-                  fill
-                  sizes="44px"
-                  className="object-cover"
-                />
-              )}
-            </span>
-            <div className="min-w-0 flex-1">
-              <p className="truncate text-[0.88rem] font-medium text-white">
-                {course.instructorName}
-              </p>
-              <p className="truncate text-[0.75rem] text-neutral-500">
-                {course.instructorTitle}
-              </p>
-            </div>
-            <Button variant="outline" size="sm" className="shrink-0">
-              Ver perfil
-            </Button>
-          </div>
-
-          {course.instructorBio && (
-            <p className="mt-3 line-clamp-3 text-[0.78rem] leading-relaxed text-neutral-500">
-              {course.instructorBio}
-            </p>
-          )}
-        </div>
+        <InstructorCard course={course} />
       </div>
 
       {/* Abas */}
@@ -183,6 +165,62 @@ export function LessonPanel({
         {active === "Materiais" && <MaterialsList materials={materials} />}
         {active === "Anotações" && <NotesPanel lessonId={lesson.id} />}
       </div>
+    </div>
+  );
+}
+
+/** Cartão do instrutor: sem link morto, com a bio expansível em vez de truncada. */
+function InstructorCard({ course }: { course: CourseDetail }) {
+  const [expanded, setExpanded] = useState(false);
+
+  return (
+    <div className="h-fit rounded-xl bg-surface-1 p-4 ring-1 ring-white/[0.07]">
+      <div className="flex items-center gap-3">
+        <span className="relative block h-11 w-11 shrink-0 overflow-hidden rounded-full bg-surface-2 ring-1 ring-white/10">
+          {course.instructorAvatar && (
+            <Image
+              src={course.instructorAvatar}
+              alt={course.instructorName ?? ""}
+              fill
+              sizes="44px"
+              className="object-cover"
+            />
+          )}
+        </span>
+        <div className="min-w-0 flex-1">
+          <p className="truncate text-[0.88rem] font-medium text-white">
+            {course.instructorName}
+          </p>
+          <p className="truncate text-[0.75rem] text-neutral-500">
+            {course.instructorTitle}
+          </p>
+        </div>
+      </div>
+
+      {course.instructorBio && (
+        <>
+          <p
+            className={cn(
+              "mt-3 text-[0.78rem] leading-relaxed text-neutral-500",
+              !expanded && "line-clamp-3",
+            )}
+          >
+            {course.instructorBio}
+          </p>
+          <button
+            onClick={() => setExpanded((e) => !e)}
+            className="mt-2 flex items-center gap-1 text-[0.75rem] font-medium text-brand transition hover:text-brand-bright"
+          >
+            {expanded ? "Ver menos" : "Ver mais"}
+            <ChevronDown
+              className={cn(
+                "h-3.5 w-3.5 transition-transform duration-300",
+                expanded && "rotate-180",
+              )}
+            />
+          </button>
+        </>
+      )}
     </div>
   );
 }

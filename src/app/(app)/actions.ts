@@ -1,11 +1,12 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { and, eq } from "drizzle-orm";
+import { and, eq, sql } from "drizzle-orm";
 
 import { db } from "@/db";
 import {
   enrollments,
+  lessonLikes,
   lessonProgress,
   lessons,
   notes,
@@ -148,6 +149,58 @@ export async function toggleLessonComplete(lessonId: string, courseId: string) {
   revalidatePath("/inicio");
   revalidatePath("/cursos");
   return { completed: next };
+}
+
+/** Curtida real de aula: alterna e devolve o novo total, contado no banco. */
+export async function toggleLessonLike(lessonId: string) {
+  const user = await getCurrentUser();
+  if (!user) return { liked: false, count: 0 };
+
+  const [existing] = await db
+    .select()
+    .from(lessonLikes)
+    .where(
+      and(eq(lessonLikes.userId, user.id), eq(lessonLikes.lessonId, lessonId)),
+    )
+    .limit(1);
+
+  if (existing) {
+    await db.delete(lessonLikes).where(eq(lessonLikes.id, existing.id));
+  } else {
+    await db
+      .insert(lessonLikes)
+      .values({ userId: user.id, lessonId })
+      .onConflictDoNothing();
+  }
+
+  const [{ count }] = await db
+    .select({ count: sql<number>`count(*)::int` })
+    .from(lessonLikes)
+    .where(eq(lessonLikes.lessonId, lessonId));
+
+  return { liked: !existing, count };
+}
+
+/** Estado inicial de curtida para renderizar o player já com o dado certo. */
+export async function getLessonLikeState(lessonId: string) {
+  const user = await getCurrentUser();
+
+  const [{ count }] = await db
+    .select({ count: sql<number>`count(*)::int` })
+    .from(lessonLikes)
+    .where(eq(lessonLikes.lessonId, lessonId));
+
+  if (!user) return { liked: false, count };
+
+  const [existing] = await db
+    .select({ id: lessonLikes.id })
+    .from(lessonLikes)
+    .where(
+      and(eq(lessonLikes.userId, user.id), eq(lessonLikes.lessonId, lessonId)),
+    )
+    .limit(1);
+
+  return { liked: Boolean(existing), count };
 }
 
 export async function addNote(

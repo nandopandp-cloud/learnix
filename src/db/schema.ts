@@ -250,6 +250,28 @@ export const watchlist = pgTable(
   (t) => [unique("watchlist_user_course_unq").on(t.userId, t.courseId)],
 );
 
+/* --------------------------------- likes ----------------------------------- */
+
+export const lessonLikes = pgTable(
+  "lesson_likes",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    userId: uuid("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    lessonId: uuid("lesson_id")
+      .notNull()
+      .references(() => lessons.id, { onDelete: "cascade" }),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (t) => [
+    unique("lesson_likes_user_lesson_unq").on(t.userId, t.lessonId),
+    index("lesson_likes_lesson_idx").on(t.lessonId),
+  ],
+);
+
 /* -------------------------------- anotações -------------------------------- */
 
 export const notes = pgTable(
@@ -364,6 +386,14 @@ export const watchlistRelations = relations(watchlist, ({ one }) => ({
 export const notesRelations = relations(notes, ({ one }) => ({
   user: one(users, { fields: [notes.userId], references: [users.id] }),
   lesson: one(lessons, { fields: [notes.lessonId], references: [lessons.id] }),
+}));
+
+export const lessonLikesRelations = relations(lessonLikes, ({ one }) => ({
+  user: one(users, { fields: [lessonLikes.userId], references: [users.id] }),
+  lesson: one(lessons, {
+    fields: [lessonLikes.lessonId],
+    references: [lessons.id],
+  }),
 }));
 
 export type User = typeof users.$inferSelect;

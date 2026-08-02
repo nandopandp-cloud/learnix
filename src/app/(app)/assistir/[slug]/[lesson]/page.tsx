@@ -5,6 +5,7 @@ import { getCurrentUser } from "@/lib/auth";
 import { getLessonView } from "@/lib/queries";
 import { ensureEnrollment } from "@/app/(app)/actions";
 import { WatchScreen } from "@/components/player/watch-screen";
+import { WatchBreadcrumb } from "@/components/player/watch-breadcrumb";
 
 export async function generateMetadata({
   params,
@@ -30,7 +31,8 @@ export default async function WatchPage({
   const view = await getLessonView(slug, lessonSlug, user.id);
   if (!view) notFound();
 
-  const { course, lesson, materials, position, completed, next } = view;
+  const { course, lesson, materials, position, completed, likeCount, liked, next } =
+    view;
 
   // Abrir a aula matricula o aluno e atualiza o "último acesso".
   await ensureEnrollment(course.id);
@@ -38,13 +40,22 @@ export default async function WatchPage({
   const nextHref = next ? `/assistir/${course.slug}/${next.slug}` : null;
 
   return (
-    <WatchScreen
-      course={course}
-      lesson={lesson}
-      materials={materials}
-      position={position}
-      completed={completed}
-      nextHref={nextHref}
-    />
+    <>
+      <WatchBreadcrumb
+        courseTitle={course.title}
+        courseSlug={course.slug}
+        lessonTitle={lesson.title}
+      />
+      <WatchScreen
+        course={course}
+        lesson={lesson}
+        materials={materials}
+        position={position}
+        completed={completed}
+        likeCount={likeCount}
+        liked={liked}
+        nextHref={nextHref}
+      />
+    </>
   );
 }

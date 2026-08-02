@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { Award, Download, CheckCircle2 } from "lucide-react";
+import { createHash } from "crypto";
+import { Award, CheckCircle2 } from "lucide-react";
 
 import { getCurrentUser } from "@/lib/auth";
 import { getCertificates, getUserStats } from "@/lib/queries";
@@ -9,6 +10,16 @@ import { PageHeader, EmptyState } from "@/components/app/page-header";
 import { Reveal } from "@/components/ui/reveal";
 import { Button } from "@/components/ui/button";
 import { Logo } from "@/components/brand/logo";
+import { DownloadCertificateButton } from "@/components/certificates/download-certificate-button";
+
+/** Código curto e estável, só para conferência visual — não é um sistema de verificação público. */
+function certificateId(userId: string, courseId: string) {
+  return createHash("sha256")
+    .update(`${userId}:${courseId}`)
+    .digest("hex")
+    .slice(0, 12)
+    .toUpperCase();
+}
 
 export const metadata: Metadata = { title: "Certificados" };
 
@@ -97,10 +108,16 @@ export default async function CertificadosPage() {
                       {user.name}
                     </p>
                   </div>
-                  <Button size="sm" variant="outline">
-                    <Download className="h-3.5 w-3.5" />
-                    Baixar PDF
-                  </Button>
+                  <DownloadCertificateButton
+                    data={{
+                      studentName: user.name,
+                      courseTitle: cert.title,
+                      instructorName: cert.instructorName ?? "Equipe Learnix",
+                      totalDuration: cert.totalDuration,
+                      finishedAt: new Date(cert.finishedAt),
+                      certificateId: certificateId(user.id, cert.courseId),
+                    }}
+                  />
                 </div>
               </article>
             </Reveal>
