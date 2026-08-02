@@ -2,7 +2,6 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
 import { Menu, X } from "lucide-react";
 
 import { cn } from "@/lib/utils";
@@ -12,15 +11,7 @@ import { UserMenu } from "./user-menu";
 import { Sidebar } from "./sidebar";
 import type { SessionUser } from "@/lib/auth";
 
-const NAV = [
-  { href: "/inicio", label: "Início" },
-  { href: "/explorar", label: "Explorar" },
-  { href: "/cursos", label: "Meus Cursos" },
-  { href: "/minha-lista", label: "Minha Lista" },
-];
-
 export function Topbar({ user }: { user: SessionUser }) {
-  const pathname = usePathname();
   const [mobileOpen, setMobileOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
 
@@ -58,34 +49,6 @@ export function Topbar({ user }: { user: SessionUser }) {
           >
             <Logo />
           </Link>
-
-          <nav className="ml-6 hidden items-center gap-1 xl:flex">
-            {NAV.map((item) => {
-              const active =
-                pathname === item.href || pathname.startsWith(`${item.href}/`);
-              return (
-                <Link
-                  key={item.href}
-                  href={item.href}
-                  onClick={() => setMobileOpen(false)}
-                  className={cn(
-                    "relative px-3 py-2 text-sm transition-colors duration-300",
-                    active
-                      ? "font-medium text-white"
-                      : "text-neutral-400 hover:text-white",
-                  )}
-                >
-                  {item.label}
-                  <span
-                    className={cn(
-                      "absolute right-3 bottom-0.5 left-3 h-[2px] rounded-full bg-brand transition-all duration-300",
-                      active ? "opacity-100" : "scale-x-0 opacity-0",
-                    )}
-                  />
-                </Link>
-              );
-            })}
-          </nav>
 
           <SearchBar className="ml-auto w-full max-w-md" />
 
