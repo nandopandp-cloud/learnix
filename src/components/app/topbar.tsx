@@ -2,18 +2,20 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { Menu, X } from "lucide-react";
+import { Menu, X, PanelLeftClose, PanelLeftOpen } from "lucide-react";
 
 import { cn } from "@/lib/utils";
 import { Logo } from "@/components/brand/logo";
 import { SearchBar } from "./search-bar";
 import { UserMenu } from "./user-menu";
 import { Sidebar } from "./sidebar";
+import { useSidebar } from "./sidebar-context";
 import type { SessionUser } from "@/lib/auth";
 
 export function Topbar({ user }: { user: SessionUser }) {
   const [mobileOpen, setMobileOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
+  const { collapsed, toggle } = useSidebar();
 
   /* A topbar ganha fundo sólido assim que a página sai do topo. */
   useEffect(() => {
@@ -33,26 +35,46 @@ export function Topbar({ user }: { user: SessionUser }) {
             : "border-b border-transparent bg-gradient-to-b from-void via-void/80 to-transparent",
         )}
       >
-        <div className="flex h-full items-center gap-4 px-4 lg:px-6">
-          <button
-            onClick={() => setMobileOpen(true)}
-            aria-label="Abrir menu"
-            className="rounded-lg p-2 text-neutral-400 transition hover:bg-white/5 hover:text-white lg:hidden"
-          >
-            <Menu className="h-5 w-5" />
-          </button>
+        <div className="grid h-full grid-cols-[1fr_auto_1fr] items-center gap-4 px-4 lg:px-6">
+          {/* Esquerda: menu mobile, toggle da sidebar e logo, tratados como um único bloco. */}
+          <div className="flex items-center gap-1.5">
+            <button
+              onClick={() => setMobileOpen(true)}
+              aria-label="Abrir menu"
+              className="rounded-lg p-2 text-neutral-400 transition hover:bg-white/5 hover:text-white lg:hidden"
+            >
+              <Menu className="h-5 w-5" />
+            </button>
 
-          <Link
-            href="/inicio"
-            onClick={() => setMobileOpen(false)}
-            className="shrink-0"
-          >
-            <Logo />
-          </Link>
+            <button
+              onClick={toggle}
+              aria-label={collapsed ? "Expandir menu" : "Recolher menu"}
+              title={collapsed ? "Expandir menu" : "Recolher menu"}
+              className="hidden shrink-0 rounded-lg p-2 text-neutral-400 transition hover:bg-white/5 hover:text-white lg:flex lg:items-center lg:justify-center"
+            >
+              {collapsed ? (
+                <PanelLeftOpen className="h-[1.15rem] w-[1.15rem]" />
+              ) : (
+                <PanelLeftClose className="h-[1.15rem] w-[1.15rem]" />
+              )}
+            </button>
 
-          <SearchBar className="ml-auto w-full max-w-md" />
+            <Link
+              href="/inicio"
+              onClick={() => setMobileOpen(false)}
+              className="shrink-0"
+            >
+              <Logo />
+            </Link>
+          </div>
 
-          <UserMenu user={user} />
+          {/* Centro: busca, centralizada de verdade no header. */}
+          <SearchBar className="w-[26rem] max-w-full" />
+
+          {/* Direita: avatar, alinhado à borda. */}
+          <div className="flex items-center justify-end">
+            <UserMenu user={user} />
+          </div>
         </div>
       </header>
 
