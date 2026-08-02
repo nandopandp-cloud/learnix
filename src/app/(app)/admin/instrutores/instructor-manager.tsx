@@ -15,6 +15,7 @@ import { initials } from "@/lib/utils";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { FormMessage } from "@/components/ui/form-controls";
 import { FileUpload } from "@/components/ui/file-upload";
+import { CROP_ASPECT } from "@/lib/uploads";
 
 type Row = {
   id: string;
@@ -73,6 +74,8 @@ export function InstructorManager({ instructors }: { instructors: Row[] }) {
               label="Avatar"
               kind="image"
               name="avatarUrl"
+              aspect={CROP_ASPECT.avatar}
+              variant="avatar"
               className="sm:col-span-2"
             />
             <textarea
@@ -148,6 +151,8 @@ function InstructorRow({ instructor }: { instructor: Row }) {
               kind="image"
               name="avatarUrl"
               defaultValue={instructor.avatarUrl}
+              aspect={CROP_ASPECT.avatar}
+              variant="avatar"
               className="sm:col-span-2"
             />
             <textarea

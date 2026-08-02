@@ -6,6 +6,7 @@ import { Loader2, Check } from "lucide-react";
 
 import { updateAvatar } from "@/app/(app)/actions";
 import { FileUpload } from "@/components/ui/file-upload";
+import { CROP_ASPECT } from "@/lib/uploads";
 
 /**
  * Avatar do próprio perfil: qualquer usuário logado pode enviar (scope
@@ -40,6 +41,7 @@ export function AvatarForm({ defaultValue }: { defaultValue: string | null }) {
         name="avatarUrl"
         variant="avatar"
         scope="self-avatar"
+        aspect={CROP_ASPECT.avatar}
         defaultValue={defaultValue}
         hint="Enviar uma nova foto salva automaticamente."
         onValueChange={onChange}

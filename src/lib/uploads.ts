@@ -30,6 +30,16 @@ export const UPLOAD_LIMITS: Record<
   },
 };
 
+/** Proporções (largura/altura) usadas no recorte de imagem em cada contexto. */
+export const CROP_ASPECT = {
+  /** Avatar de usuário/instrutor — sempre quadrado. */
+  avatar: 1,
+  /** Thumbnail de curso/aula — cards 16:9. */
+  thumbnail: 16 / 9,
+  /** Backdrop/capa — banner largo do topo da página. */
+  backdrop: 21 / 9,
+} as const;
+
 export function formatBytes(bytes: number) {
   if (bytes < 1024) return `${bytes} B`;
   const units = ["KB", "MB", "GB"];

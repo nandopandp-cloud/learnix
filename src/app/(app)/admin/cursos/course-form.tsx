@@ -14,6 +14,7 @@ import {
   Checkbox,
   FormMessage,
 } from "@/components/ui/form-controls";
+import { CROP_ASPECT } from "@/lib/uploads";
 import type { Category, Instructor, Course } from "@/db/schema";
 
 const LEVELS = [
@@ -155,6 +156,7 @@ export function CourseForm({
             kind="image"
             name="thumbnailUrl"
             defaultValue={course?.thumbnailUrl}
+            aspect={CROP_ASPECT.thumbnail}
             hint="Imagem 16:9 usada nos cards."
           />
           <FileUpload
@@ -162,6 +164,7 @@ export function CourseForm({
             kind="image"
             name="backdropUrl"
             defaultValue={course?.backdropUrl}
+            aspect={CROP_ASPECT.backdrop}
             hint="Imagem larga do topo da página do curso."
           />
           <TextArea

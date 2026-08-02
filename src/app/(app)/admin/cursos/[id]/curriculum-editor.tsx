@@ -25,6 +25,7 @@ import { cn, formatTimecode } from "@/lib/utils";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { FormMessage } from "@/components/ui/form-controls";
 import { FileUpload } from "@/components/ui/file-upload";
+import { CROP_ASPECT } from "@/lib/uploads";
 import type { Module, Lesson } from "@/db/schema";
 
 export function CurriculumEditor({
@@ -280,6 +281,7 @@ function LessonRow({ lesson, courseId }: { lesson: Lesson; courseId: string }) {
             kind="image"
             name="thumbnailUrl"
             defaultValue={lesson.thumbnailUrl}
+            aspect={CROP_ASPECT.thumbnail}
             hint="Opcional — usa o backdrop do curso quando vazio."
           />
           <textarea
@@ -436,6 +438,7 @@ function NewLessonForm({
           label="Thumbnail da aula"
           kind="image"
           name="thumbnailUrl"
+          aspect={CROP_ASPECT.thumbnail}
           hint="Opcional — usa o backdrop do curso quando vazio."
         />
         <textarea
