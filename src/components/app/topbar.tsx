@@ -5,7 +5,7 @@ import Link from "next/link";
 import { Menu, X, PanelLeftClose, PanelLeftOpen } from "lucide-react";
 
 import { cn } from "@/lib/utils";
-import { Logo } from "@/components/brand/logo";
+import { Logo, LogoMark } from "@/components/brand/logo";
 import { SearchBar } from "./search-bar";
 import { UserMenu } from "./user-menu";
 import { Sidebar } from "./sidebar";
@@ -46,6 +46,20 @@ export function Topbar({ user }: { user: SessionUser }) {
               <Menu className="h-5 w-5" />
             </button>
 
+            <Link
+              href="/inicio"
+              onClick={() => setMobileOpen(false)}
+              className="shrink-0"
+            >
+              {/* Em telas grandes, a marca acompanha o colapso da sidebar; no mobile é sempre a logo completa. */}
+              <span className={collapsed ? "hidden lg:block" : "hidden"}>
+                <LogoMark />
+              </span>
+              <span className={collapsed ? "lg:hidden" : "block"}>
+                <Logo />
+              </span>
+            </Link>
+
             <button
               onClick={toggle}
               aria-label={collapsed ? "Expandir menu" : "Recolher menu"}
@@ -58,14 +72,6 @@ export function Topbar({ user }: { user: SessionUser }) {
                 <PanelLeftClose className="h-[1.15rem] w-[1.15rem]" />
               )}
             </button>
-
-            <Link
-              href="/inicio"
-              onClick={() => setMobileOpen(false)}
-              className="shrink-0"
-            >
-              <Logo />
-            </Link>
           </div>
 
           {/* Centro: busca, centralizada de verdade no header. */}
