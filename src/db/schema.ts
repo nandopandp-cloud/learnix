@@ -272,6 +272,76 @@ export const lessonLikes = pgTable(
   ],
 );
 
+/* ------------------------------- avaliações -------------------------------- */
+
+export const courseRatings = pgTable(
+  "course_ratings",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    userId: uuid("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    courseId: uuid("course_id")
+      .notNull()
+      .references(() => courses.id, { onDelete: "cascade" }),
+    /** nota de 1 a 5 */
+    stars: integer("stars").notNull(),
+    comment: text("comment"),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (t) => [
+    unique("course_ratings_user_course_unq").on(t.userId, t.courseId),
+    index("course_ratings_course_idx").on(t.courseId),
+  ],
+);
+
+/* --------------------------------- Q&A ------------------------------------- */
+
+export const questions = pgTable(
+  "questions",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    userId: uuid("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    courseId: uuid("course_id")
+      .notNull()
+      .references(() => courses.id, { onDelete: "cascade" }),
+    /** aula de origem, quando a pergunta nasce dentro do player */
+    lessonId: uuid("lesson_id").references(() => lessons.id, {
+      onDelete: "set null",
+    }),
+    content: text("content").notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (t) => [index("questions_course_idx").on(t.courseId)],
+);
+
+export const answers = pgTable(
+  "answers",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    questionId: uuid("question_id")
+      .notNull()
+      .references(() => questions.id, { onDelete: "cascade" }),
+    userId: uuid("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    content: text("content").notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (t) => [index("answers_question_idx").on(t.questionId)],
+);
+
 /* -------------------------------- anotações -------------------------------- */
 
 export const notes = pgTable(
@@ -394,6 +464,35 @@ export const lessonLikesRelations = relations(lessonLikes, ({ one }) => ({
     fields: [lessonLikes.lessonId],
     references: [lessons.id],
   }),
+}));
+
+export const courseRatingsRelations = relations(courseRatings, ({ one }) => ({
+  user: one(users, { fields: [courseRatings.userId], references: [users.id] }),
+  course: one(courses, {
+    fields: [courseRatings.courseId],
+    references: [courses.id],
+  }),
+}));
+
+export const questionsRelations = relations(questions, ({ one, many }) => ({
+  user: one(users, { fields: [questions.userId], references: [users.id] }),
+  course: one(courses, {
+    fields: [questions.courseId],
+    references: [courses.id],
+  }),
+  lesson: one(lessons, {
+    fields: [questions.lessonId],
+    references: [lessons.id],
+  }),
+  answers: many(answers),
+}));
+
+export const answersRelations = relations(answers, ({ one }) => ({
+  question: one(questions, {
+    fields: [answers.questionId],
+    references: [questions.id],
+  }),
+  user: one(users, { fields: [answers.userId], references: [users.id] }),
 }));
 
 export type User = typeof users.$inferSelect;

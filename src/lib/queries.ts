@@ -4,7 +4,9 @@ import { and, desc, eq, ilike, inArray, or, sql, asc } from "drizzle-orm";
 
 import { db } from "@/db";
 import {
+  answers,
   categories,
+  courseRatings,
   courses,
   enrollments,
   instructors,
@@ -13,6 +15,8 @@ import {
   lessons,
   materials,
   modules,
+  questions,
+  users,
   watchlist,
 } from "@/db/schema";
 
@@ -531,6 +535,145 @@ export async function searchCourses(term: string, limit = 8) {
       ),
     )
     .limit(limit);
+}
+
+/* ------------------------------- avaliações -------------------------------- */
+
+export type CourseReviews = Awaited<ReturnType<typeof getCourseReviews>>;
+
+/**
+ * Resumo de avaliações do curso: média e distribuição vêm agregadas do banco,
+ * e a lista traz só quem escreveu comentário (nota sem texto conta para a
+ * média, mas não rende um card vazio na aba).
+ */
+export async function getCourseReviews(courseId: string, userId?: string) {
+  const [summary] = await db
+    .select({
+      average: sql<number>`coalesce(avg(${courseRatings.stars}), 0)::float`,
+      count: sql<number>`count(*)::int`,
+      s5: sql<number>`count(*) filter (where ${courseRatings.stars} = 5)::int`,
+      s4: sql<number>`count(*) filter (where ${courseRatings.stars} = 4)::int`,
+      s3: sql<number>`count(*) filter (where ${courseRatings.stars} = 3)::int`,
+      s2: sql<number>`count(*) filter (where ${courseRatings.stars} = 2)::int`,
+      s1: sql<number>`count(*) filter (where ${courseRatings.stars} = 1)::int`,
+    })
+    .from(courseRatings)
+    .where(eq(courseRatings.courseId, courseId));
+
+  const list = await db
+    .select({
+      id: courseRatings.id,
+      stars: courseRatings.stars,
+      comment: courseRatings.comment,
+      createdAt: courseRatings.createdAt,
+      userId: courseRatings.userId,
+      authorName: users.name,
+      authorAvatar: users.avatarUrl,
+    })
+    .from(courseRatings)
+    .innerJoin(users, eq(users.id, courseRatings.userId))
+    .where(
+      and(
+        eq(courseRatings.courseId, courseId),
+        sql`${courseRatings.comment} is not null and ${courseRatings.comment} <> ''`,
+      ),
+    )
+    .orderBy(desc(courseRatings.createdAt))
+    .limit(50);
+
+  const [mine] = userId
+    ? await db
+        .select({
+          stars: courseRatings.stars,
+          comment: courseRatings.comment,
+        })
+        .from(courseRatings)
+        .where(
+          and(
+            eq(courseRatings.userId, userId),
+            eq(courseRatings.courseId, courseId),
+          ),
+        )
+        .limit(1)
+    : [];
+
+  const total = summary.count;
+  const pct = (n: number) => (total > 0 ? Math.round((n / total) * 100) : 0);
+
+  return {
+    average: summary.average,
+    count: total,
+    distribution: [
+      { stars: 5, count: summary.s5, pct: pct(summary.s5) },
+      { stars: 4, count: summary.s4, pct: pct(summary.s4) },
+      { stars: 3, count: summary.s3, pct: pct(summary.s3) },
+      { stars: 2, count: summary.s2, pct: pct(summary.s2) },
+      { stars: 1, count: summary.s1, pct: pct(summary.s1) },
+    ],
+    reviews: list,
+    myRating: mine ?? null,
+  };
+}
+
+/* ---------------------------------- Q&A ------------------------------------ */
+
+export type CourseQuestions = Awaited<ReturnType<typeof getCourseQuestions>>;
+
+/** Perguntas do curso com suas respostas aninhadas, mais recentes primeiro. */
+export async function getCourseQuestions(courseId: string) {
+  const questionRows = await db
+    .select({
+      id: questions.id,
+      content: questions.content,
+      createdAt: questions.createdAt,
+      userId: questions.userId,
+      authorName: users.name,
+      authorAvatar: users.avatarUrl,
+      authorRole: users.role,
+      lessonId: questions.lessonId,
+      lessonTitle: lessons.title,
+    })
+    .from(questions)
+    .innerJoin(users, eq(users.id, questions.userId))
+    .leftJoin(lessons, eq(lessons.id, questions.lessonId))
+    .where(eq(questions.courseId, courseId))
+    .orderBy(desc(questions.createdAt))
+    .limit(100);
+
+  if (questionRows.length === 0) return [];
+
+  const answerRows = await db
+    .select({
+      id: answers.id,
+      questionId: answers.questionId,
+      content: answers.content,
+      createdAt: answers.createdAt,
+      userId: answers.userId,
+      authorName: users.name,
+      authorAvatar: users.avatarUrl,
+      authorRole: users.role,
+    })
+    .from(answers)
+    .innerJoin(users, eq(users.id, answers.userId))
+    .where(
+      inArray(
+        answers.questionId,
+        questionRows.map((q) => q.id),
+      ),
+    )
+    .orderBy(asc(answers.createdAt));
+
+  const byQuestion = new Map<string, typeof answerRows>();
+  for (const answer of answerRows) {
+    const list = byQuestion.get(answer.questionId) ?? [];
+    list.push(answer);
+    byQuestion.set(answer.questionId, list);
+  }
+
+  return questionRows.map((q) => ({
+    ...q,
+    answers: byQuestion.get(q.id) ?? [],
+  }));
 }
 
 export { asc, inArray };

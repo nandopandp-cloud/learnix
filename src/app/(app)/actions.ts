@@ -5,11 +5,15 @@ import { and, eq, sql } from "drizzle-orm";
 
 import { db } from "@/db";
 import {
+  answers,
+  courseRatings,
+  courses,
   enrollments,
   lessonLikes,
   lessonProgress,
   lessons,
   notes,
+  questions,
   users,
   watchlist,
 } from "@/db/schema";
@@ -237,4 +241,192 @@ export async function getNotes(lessonId: string) {
     .from(notes)
     .where(and(eq(notes.userId, user.id), eq(notes.lessonId, lessonId)))
     .orderBy(notes.timestampSeconds);
+}
+
+/* ------------------------------- avaliações -------------------------------- */
+
+/**
+ * Recalcula média e total do curso a partir das notas individuais.
+ * As colunas em `courses` são denormalizadas porque aparecem nas listagens,
+ * onde agregar por curso sairia caro.
+ */
+async function syncCourseRating(courseId: string) {
+  const [agg] = await db
+    .select({
+      average: sql<number>`coalesce(avg(${courseRatings.stars}), 0)::float`,
+      count: sql<number>`count(*)::int`,
+    })
+    .from(courseRatings)
+    .where(eq(courseRatings.courseId, courseId));
+
+  await db
+    .update(courses)
+    .set({ rating: agg.average, ratingCount: agg.count })
+    .where(eq(courses.id, courseId));
+
+  return agg;
+}
+
+/** Cria ou atualiza a avaliação do usuário logado para o curso. */
+export async function rateCourse(
+  courseId: string,
+  stars: number,
+  comment: string,
+) {
+  const user = await getCurrentUser();
+  if (!user) return { error: "Entre na sua conta para avaliar." };
+  if (stars < 1 || stars > 5) return { error: "Escolha de 1 a 5 estrelas." };
+
+  const trimmed = comment.trim();
+
+  await db
+    .insert(courseRatings)
+    .values({
+      userId: user.id,
+      courseId,
+      stars,
+      comment: trimmed || null,
+    })
+    .onConflictDoUpdate({
+      target: [courseRatings.userId, courseRatings.courseId],
+      set: { stars, comment: trimmed || null, updatedAt: new Date() },
+    });
+
+  await syncCourseRating(courseId);
+
+  const [course] = await db
+    .select({ slug: courses.slug })
+    .from(courses)
+    .where(eq(courses.id, courseId))
+    .limit(1);
+
+  if (course) revalidatePath(`/cursos/${course.slug}`);
+  return { success: true };
+}
+
+/** Remove a avaliação do usuário logado. */
+export async function deleteMyRating(courseId: string) {
+  const user = await getCurrentUser();
+  if (!user) return { error: "Não autenticado." };
+
+  await db
+    .delete(courseRatings)
+    .where(
+      and(
+        eq(courseRatings.userId, user.id),
+        eq(courseRatings.courseId, courseId),
+      ),
+    );
+
+  await syncCourseRating(courseId);
+
+  const [course] = await db
+    .select({ slug: courses.slug })
+    .from(courses)
+    .where(eq(courses.id, courseId))
+    .limit(1);
+
+  if (course) revalidatePath(`/cursos/${course.slug}`);
+  return { success: true };
+}
+
+/* ---------------------------------- Q&A ------------------------------------ */
+
+/** Publica uma pergunta no curso (opcionalmente atrelada a uma aula). */
+export async function askQuestion(
+  courseId: string,
+  content: string,
+  lessonId?: string,
+) {
+  const user = await getCurrentUser();
+  if (!user) return { error: "Entre na sua conta para perguntar." };
+
+  const trimmed = content.trim();
+  if (!trimmed) return { error: "Escreva sua pergunta." };
+
+  await db.insert(questions).values({
+    userId: user.id,
+    courseId,
+    lessonId: lessonId ?? null,
+    content: trimmed,
+  });
+
+  const [course] = await db
+    .select({ slug: courses.slug })
+    .from(courses)
+    .where(eq(courses.id, courseId))
+    .limit(1);
+
+  if (course) revalidatePath(`/cursos/${course.slug}`);
+  return { success: true };
+}
+
+/** Responde a uma pergunta — aberto a qualquer usuário autenticado. */
+export async function answerQuestion(questionId: string, content: string) {
+  const user = await getCurrentUser();
+  if (!user) return { error: "Entre na sua conta para responder." };
+
+  const trimmed = content.trim();
+  if (!trimmed) return { error: "Escreva sua resposta." };
+
+  await db.insert(answers).values({
+    questionId,
+    userId: user.id,
+    content: trimmed,
+  });
+
+  const [row] = await db
+    .select({ slug: courses.slug })
+    .from(questions)
+    .innerJoin(courses, eq(courses.id, questions.courseId))
+    .where(eq(questions.id, questionId))
+    .limit(1);
+
+  if (row) revalidatePath(`/cursos/${row.slug}`);
+  return { success: true };
+}
+
+/** Remove a própria pergunta (admin pode remover qualquer uma). */
+export async function deleteQuestion(questionId: string) {
+  const user = await getCurrentUser();
+  if (!user) return { error: "Não autenticado." };
+
+  const [row] = await db
+    .select({ userId: questions.userId, slug: courses.slug })
+    .from(questions)
+    .innerJoin(courses, eq(courses.id, questions.courseId))
+    .where(eq(questions.id, questionId))
+    .limit(1);
+
+  if (!row) return { error: "Pergunta não encontrada." };
+  if (row.userId !== user.id && user.role !== "admin") {
+    return { error: "Você só pode remover suas próprias perguntas." };
+  }
+
+  await db.delete(questions).where(eq(questions.id, questionId));
+  revalidatePath(`/cursos/${row.slug}`);
+  return { success: true };
+}
+
+/** Remove a própria resposta (admin pode remover qualquer uma). */
+export async function deleteAnswer(answerId: string) {
+  const user = await getCurrentUser();
+  if (!user) return { error: "Não autenticado." };
+
+  const [row] = await db
+    .select({ userId: answers.userId, slug: courses.slug })
+    .from(answers)
+    .innerJoin(questions, eq(questions.id, answers.questionId))
+    .innerJoin(courses, eq(courses.id, questions.courseId))
+    .where(eq(answers.id, answerId))
+    .limit(1);
+
+  if (!row) return { error: "Resposta não encontrada." };
+  if (row.userId !== user.id && user.role !== "admin") {
+    return { error: "Você só pode remover suas próprias respostas." };
+  }
+
+  await db.delete(answers).where(eq(answers.id, answerId));
+  revalidatePath(`/cursos/${row.slug}`);
+  return { success: true };
 }

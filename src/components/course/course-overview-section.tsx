@@ -3,7 +3,11 @@
 import { useState } from "react";
 import { Reveal } from "@/components/ui/reveal";
 import { CourseTabNav, CourseTabs } from "@/components/course/course-tabs";
-import type { CourseDetail } from "@/lib/queries";
+import type {
+  CourseDetail,
+  CourseReviews,
+  CourseQuestions,
+} from "@/lib/queries";
 
 /**
  * Junta a navegação de abas (largura total) com o grid de conteúdo + aside.
@@ -13,9 +17,17 @@ import type { CourseDetail } from "@/lib/queries";
 export function CourseOverviewSection({
   course,
   aside,
+  reviews,
+  questions,
+  currentUserId,
+  isAdmin,
 }: {
   course: CourseDetail;
   aside: React.ReactNode;
+  reviews: CourseReviews;
+  questions: CourseQuestions;
+  currentUserId: string | null;
+  isAdmin: boolean;
 }) {
   const [active, setActive] = useState<
     "Overview" | "Conteúdo do curso" | "Materiais" | "Avaliações" | "Perguntas"
@@ -29,7 +41,14 @@ export function CourseOverviewSection({
 
       <div className="grid gap-8 pt-7 xl:grid-cols-[1fr_20rem]">
         <div className="min-w-0">
-          <CourseTabs course={course} active={active} />
+          <CourseTabs
+            course={course}
+            active={active}
+            reviews={reviews}
+            questions={questions}
+            currentUserId={currentUserId}
+            isAdmin={isAdmin}
+          />
         </div>
         <aside className="space-y-5">{aside}</aside>
       </div>

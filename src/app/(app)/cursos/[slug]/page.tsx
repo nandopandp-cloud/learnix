@@ -17,7 +17,11 @@ import {
 } from "lucide-react";
 
 import { getCurrentUser } from "@/lib/auth";
-import { getCourseBySlug } from "@/lib/queries";
+import {
+  getCourseBySlug,
+  getCourseReviews,
+  getCourseQuestions,
+} from "@/lib/queries";
 import { formatDuration, formatCount } from "@/lib/utils";
 import { Reveal } from "@/components/ui/reveal";
 import { Button } from "@/components/ui/button";
@@ -48,6 +52,11 @@ export default async function CoursePage({
   const course = await getCourseBySlug(slug, user.id);
 
   if (!course) notFound();
+
+  const [reviews, questions] = await Promise.all([
+    getCourseReviews(course.id, user.id),
+    getCourseQuestions(course.id),
+  ]);
 
   const watchHref = course.nextLesson
     ? `/assistir/${course.slug}/${course.nextLesson.slug}`
@@ -112,10 +121,22 @@ export default async function CoursePage({
                 <div className="mt-5 flex flex-wrap items-center gap-x-4 gap-y-2 text-[0.82rem] text-neutral-400">
                   <span className="flex items-center gap-1.5">
                     <Star className="h-4 w-4 fill-amber-400 text-amber-400" />
-                    <span className="font-medium text-white">
-                      {course.rating.toFixed(1).replace(".", ",")}
-                    </span>
-                    <span>({formatCount(course.ratingCount)} avaliações)</span>
+                    {course.ratingCount === 0 ? (
+                      <span>Ainda sem avaliações</span>
+                    ) : (
+                      <>
+                        <span className="font-medium text-white">
+                          {course.rating.toFixed(1).replace(".", ",")}
+                        </span>
+                        <span>
+                          ({formatCount(course.ratingCount)}{" "}
+                          {course.ratingCount === 1
+                            ? "avaliação"
+                            : "avaliações"}
+                          )
+                        </span>
+                      </>
+                    )}
                   </span>
                   <span className="h-1 w-1 rounded-full bg-neutral-700" />
                   <span>{course.level}</span>
@@ -170,6 +191,10 @@ export default async function CoursePage({
         {/* ------------------------- conteúdo + aside ------------------------ */}
         <CourseOverviewSection
           course={course}
+          reviews={reviews}
+          questions={questions}
+          currentUserId={user.id}
+          isAdmin={user.role === "admin"}
           aside={
             <>
               <Reveal delay={0.2}>

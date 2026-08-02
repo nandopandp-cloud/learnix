@@ -10,12 +10,16 @@ import {
   ChevronDown,
   Clock,
   Download,
-  Star,
-  MessageCircle,
 } from "lucide-react";
 
-import { cn, formatDuration, formatTimecode, formatCount } from "@/lib/utils";
-import type { CourseDetail } from "@/lib/queries";
+import { cn, formatDuration, formatTimecode } from "@/lib/utils";
+import type {
+  CourseDetail,
+  CourseReviews,
+  CourseQuestions,
+} from "@/lib/queries";
+import { ReviewsTab } from "@/components/course/reviews-tab";
+import { QuestionsTab } from "@/components/course/questions-tab";
 
 const TABS = [
   "Overview",
@@ -68,17 +72,38 @@ export function CourseTabNav({
 export function CourseTabs({
   course,
   active,
+  reviews,
+  questions,
+  currentUserId,
+  isAdmin,
 }: {
   course: CourseDetail;
   active: Tab;
+  reviews: CourseReviews;
+  questions: CourseQuestions;
+  currentUserId: string | null;
+  isAdmin: boolean;
 }) {
   return (
     <div key={active} style={{ animation: "animationIn 0.5s var(--ease-out-expo) both" }}>
       {active === "Overview" && <OverviewTab course={course} />}
       {active === "Conteúdo do curso" && <ContentTab course={course} />}
       {active === "Materiais" && <MaterialsTab course={course} />}
-      {active === "Avaliações" && <ReviewsTab course={course} />}
-      {active === "Perguntas" && <QuestionsTab />}
+      {active === "Avaliações" && (
+        <ReviewsTab
+          courseId={course.id}
+          data={reviews}
+          currentUserId={currentUserId}
+        />
+      )}
+      {active === "Perguntas" && (
+        <QuestionsTab
+          courseId={course.id}
+          questions={questions}
+          currentUserId={currentUserId}
+          isAdmin={isAdmin}
+        />
+      )}
     </div>
   );
 }
@@ -329,94 +354,14 @@ function MaterialsTab({ course }: { course: CourseDetail }) {
   );
 }
 
-/* ------------------------------- avaliações ------------------------------- */
-
-function ReviewsTab({ course }: { course: CourseDetail }) {
-  const distribution = [
-    { stars: 5, pct: 78 },
-    { stars: 4, pct: 16 },
-    { stars: 3, pct: 4 },
-    { stars: 2, pct: 1 },
-    { stars: 1, pct: 1 },
-  ];
-
-  return (
-    <div className="space-y-8">
-      <div className="flex flex-col gap-8 rounded-xl bg-surface-1 p-6 ring-1 ring-white/[0.07] sm:flex-row sm:items-center">
-        <div className="text-center sm:w-40 sm:shrink-0">
-          <p className="font-display text-5xl font-bold text-white">
-            {course.rating.toFixed(1).replace(".", ",")}
-          </p>
-          <div className="mt-2 flex justify-center gap-0.5">
-            {Array.from({ length: 5 }).map((_, i) => (
-              <Star
-                key={i}
-                className={cn(
-                  "h-4 w-4",
-                  i < Math.round(course.rating)
-                    ? "fill-amber-400 text-amber-400"
-                    : "text-neutral-700",
-                )}
-              />
-            ))}
-          </div>
-          <p className="mt-2 text-[0.75rem] text-neutral-500">
-            {formatCount(course.ratingCount)} avaliações
-          </p>
-        </div>
-
-        <div className="flex-1 space-y-2">
-          {distribution.map(({ stars, pct }) => (
-            <div key={stars} className="flex items-center gap-3">
-              <span className="w-10 shrink-0 text-right font-mono text-[0.72rem] text-neutral-500">
-                {stars}★
-              </span>
-              <div className="h-1.5 flex-1 overflow-hidden rounded-full bg-white/[0.08]">
-                <div
-                  className="h-full rounded-full bg-amber-400/80 transition-all duration-1000 ease-[var(--ease-out-quint)]"
-                  style={{ width: `${pct}%` }}
-                />
-              </div>
-              <span className="w-9 shrink-0 font-mono text-[0.72rem] text-neutral-500">
-                {pct}%
-              </span>
-            </div>
-          ))}
-        </div>
-      </div>
-
-      <EmptyState
-        icon={MessageCircle}
-        title="Seja o primeiro a comentar"
-        description="Conclua o curso para deixar sua avaliação e ajudar outros alunos."
-      />
-    </div>
-  );
-}
-
-/* -------------------------------- perguntas ------------------------------- */
-
-function QuestionsTab() {
-  return (
-    <EmptyState
-      icon={MessageCircle}
-      title="Nenhuma pergunta ainda"
-      description="Tem alguma dúvida sobre o curso? Envie sua pergunta e o instrutor responderá em breve."
-      action="Fazer uma pergunta"
-    />
-  );
-}
-
 function EmptyState({
   icon: Icon,
   title,
   description,
-  action,
 }: {
   icon: React.ElementType;
   title: string;
   description: string;
-  action?: string;
 }) {
   return (
     <div className="flex flex-col items-center rounded-xl bg-surface-1 px-6 py-14 text-center ring-1 ring-white/[0.07]">
@@ -429,11 +374,6 @@ function EmptyState({
       <p className="mt-2 max-w-sm text-[0.85rem] leading-relaxed text-neutral-500">
         {description}
       </p>
-      {action && (
-        <button className="mt-5 rounded-lg bg-white/10 px-4 py-2 text-[0.82rem] text-white transition hover:bg-white/15">
-          {action}
-        </button>
-      )}
     </div>
   );
 }
