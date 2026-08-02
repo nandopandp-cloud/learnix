@@ -9,10 +9,18 @@ import {
   Defs,
   LinearGradient,
   Stop,
+  Font,
 } from "@react-pdf/renderer";
 import { formatDuration } from "@/lib/utils";
 
 const BRAND = "#E50914";
+
+// Fonte cursiva para simular a assinatura manuscrita do instrutor.
+// Registrada uma única vez; chamadas repetidas são ignoradas pelo react-pdf.
+Font.register({
+  family: "Great Vibes",
+  src: "/fonts/GreatVibes-Regular.ttf",
+});
 
 const styles = StyleSheet.create({
   page: {
@@ -119,11 +127,18 @@ const styles = StyleSheet.create({
     display: "flex",
     flexDirection: "column",
     alignItems: "center",
-    width: 180,
+    width: 340,
+  },
+  signatureScript: {
+    fontFamily: "Great Vibes",
+    color: "#f5f5f5",
+    marginBottom: -6,
+    textAlign: "center",
   },
   signatureLine: {
     width: "100%",
     borderTop: "1pt solid #525252",
+    marginTop: 8,
     marginBottom: 6,
   },
   signatureName: { fontSize: 11, fontFamily: "Helvetica-Bold" },
@@ -164,6 +179,15 @@ export type CertificateData = {
   finishedAt: Date;
   certificateId: string;
 };
+
+/** Reduz o tamanho da assinatura cursiva conforme o nome cresce, para caber em uma linha. */
+function signatureFontSize(name: string) {
+  if (name.length <= 14) return 34;
+  if (name.length <= 20) return 28;
+  if (name.length <= 26) return 23;
+  if (name.length <= 32) return 19;
+  return Math.max(13, Math.round(19 * (32 / name.length)));
+}
 
 /** Certificado de conclusão em A4 paisagem, com a identidade visual da Learnix. */
 export function CertificateDocument({ data }: { data: CertificateData }) {
@@ -214,6 +238,15 @@ export function CertificateDocument({ data }: { data: CertificateData }) {
 
           <View style={styles.footer}>
             <View style={styles.signatureBlock}>
+              <Text
+                wrap={false}
+                style={[
+                  styles.signatureScript,
+                  { fontSize: signatureFontSize(data.instructorName) },
+                ]}
+              >
+                {data.instructorName}
+              </Text>
               <View style={styles.signatureLine} />
               <Text style={styles.signatureName}>{data.instructorName}</Text>
               <Text style={styles.signatureRole}>Instrutor do curso</Text>

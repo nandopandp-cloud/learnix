@@ -1,3 +1,4 @@
+import { useId } from "react";
 import { cn } from "@/lib/utils";
 
 /**
@@ -5,6 +6,12 @@ import { cn } from "@/lib/utils";
  * um "L" vermelho cujo braço interno vira um play triangle.
  */
 export function LogoMark({ className }: { className?: string }) {
+  // Cada instância precisa de um id de gradiente único: duas cópias na
+  // página (ex.: uma oculta para o estado recolhido, outra visível) com o
+  // mesmo id colidem e o navegador falha em resolver o fill, deixando o
+  // ícone invisível mesmo com o layout correto.
+  const gradientId = useId();
+
   return (
     <svg
       viewBox="0 0 100 100"
@@ -13,7 +20,7 @@ export function LogoMark({ className }: { className?: string }) {
       className={cn("h-8 w-8", className)}
     >
       <defs>
-        <linearGradient id="lx-mark" x1="0" y1="0" x2="1" y2="1">
+        <linearGradient id={gradientId} x1="0" y1="0" x2="1" y2="1">
           <stop offset="0%" stopColor="#FF2A36" />
           <stop offset="100%" stopColor="#B20710" />
         </linearGradient>
@@ -21,10 +28,10 @@ export function LogoMark({ className }: { className?: string }) {
       {/* haste + base do L */}
       <path
         d="M14 12h14a8 8 0 0 1 8 8v50h34a8 8 0 0 1 8 8v10H14V12Z"
-        fill="url(#lx-mark)"
+        fill={`url(#${gradientId})`}
       />
       {/* play triangle */}
-      <path d="M40 26 78 48 40 70V26Z" fill="url(#lx-mark)" />
+      <path d="M40 26 78 48 40 70V26Z" fill={`url(#${gradientId})`} />
     </svg>
   );
 }
