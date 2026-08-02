@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Bell, Menu, X } from "lucide-react";
+import { Menu, X } from "lucide-react";
 
 import { cn } from "@/lib/utils";
 import { Logo } from "@/components/brand/logo";
@@ -88,14 +88,6 @@ export function Topbar({ user }: { user: SessionUser }) {
           </nav>
 
           <SearchBar className="ml-auto w-full max-w-md" />
-
-          <button
-            aria-label="Notificações"
-            className="relative shrink-0 rounded-lg p-2 text-neutral-400 transition hover:bg-white/5 hover:text-white"
-          >
-            <Bell className="h-[1.15rem] w-[1.15rem]" />
-            <span className="absolute top-1.5 right-1.5 h-2 w-2 rounded-full bg-brand ring-2 ring-void" />
-          </button>
 
           <UserMenu user={user} />
         </div>
