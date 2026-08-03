@@ -70,69 +70,74 @@ export default function PremiumPage() {
         <div className="grid gap-5 px-4 pb-12 lg:grid-cols-3 lg:px-8">
           {PLANS.map((plan, i) => (
             <Reveal key={plan.name} delay={i * 0.1}>
-              <Flashlight
-                className={
-                  plan.highlight
-                    ? "border-gradient relative h-full rounded-2xl bg-surface-1 p-7 ring-1 ring-brand/30"
-                    : "border-gradient h-full rounded-2xl bg-surface-1 p-7"
-                }
-              >
+              {/* A badge fica fora do Flashlight: ele recorta o conteúdo
+                  (overflow-hidden) e cortaria o selo, que é posicionado
+                  para fora da borda superior do card. */}
+              <div className="relative h-full">
                 {plan.highlight && (
-                  <>
-                    <div className="pointer-events-none absolute -top-24 -right-24 h-56 w-56 rounded-full bg-brand/15 blur-3xl" />
-                    <span className="absolute -top-3 left-7 flex items-center gap-1.5 rounded-full bg-brand px-3 py-1 text-[0.66rem] font-bold tracking-wide text-white uppercase">
-                      <Crown className="h-3 w-3" />
-                      Mais popular
-                    </span>
-                  </>
+                  <span className="absolute -top-3 left-7 z-10 flex items-center gap-1.5 rounded-full bg-brand px-3 py-1 text-[0.66rem] font-bold tracking-wide text-white uppercase">
+                    <Crown className="h-3 w-3" />
+                    Mais popular
+                  </span>
                 )}
-
-                <h2 className="font-display text-lg font-semibold text-white">
-                  {plan.name}
-                </h2>
-                <p className="mt-1.5 text-[0.82rem] text-neutral-500">
-                  {plan.description}
-                </p>
-
-                <div className="mt-6 flex items-baseline gap-1.5">
-                  <span className="font-display text-4xl font-bold tracking-tight text-white">
-                    {plan.price}
-                  </span>
-                  <span className="text-[0.82rem] text-neutral-500">
-                    {plan.period}
-                  </span>
-                </div>
-
-                <ul className="mt-7 space-y-3">
-                  {plan.features.map((feature) => (
-                    <li key={feature} className="flex items-start gap-2.5">
-                      <Check
-                        className={
-                          plan.highlight
-                            ? "mt-0.5 h-4 w-4 shrink-0 text-brand"
-                            : "mt-0.5 h-4 w-4 shrink-0 text-neutral-600"
-                        }
-                      />
-                      <span className="text-[0.85rem] leading-relaxed text-neutral-300">
-                        {feature}
-                      </span>
-                    </li>
-                  ))}
-                </ul>
-
-                <div className="mt-8">
-                  {plan.highlight ? (
-                    <BeamButton className="w-full">{plan.cta}</BeamButton>
-                  ) : (
-                    <button
-                      disabled={plan.name === "Gratuito"}
-                      className="w-full rounded-lg bg-white/[0.08] px-5 py-3 text-sm font-medium text-white transition hover:bg-white/[0.14] disabled:pointer-events-none disabled:opacity-40"
-                    >
-                      {plan.cta}
-                    </button>
+                <Flashlight
+                  className={
+                    plan.highlight
+                      ? "border-gradient relative h-full rounded-2xl bg-surface-1 p-7 ring-1 ring-brand/30"
+                      : "border-gradient h-full rounded-2xl bg-surface-1 p-7"
+                  }
+                >
+                  {plan.highlight && (
+                    <div className="pointer-events-none absolute -top-24 -right-24 h-56 w-56 rounded-full bg-brand/15 blur-3xl" />
                   )}
-                </div>
-              </Flashlight>
+
+                  <h2 className="font-display text-lg font-semibold text-white">
+                    {plan.name}
+                  </h2>
+                  <p className="mt-1.5 text-[0.82rem] text-neutral-500">
+                    {plan.description}
+                  </p>
+
+                  <div className="mt-6 flex items-baseline gap-1.5">
+                    <span className="font-display text-4xl font-bold tracking-tight text-white">
+                      {plan.price}
+                    </span>
+                    <span className="text-[0.82rem] text-neutral-500">
+                      {plan.period}
+                    </span>
+                  </div>
+
+                  <ul className="mt-7 space-y-3">
+                    {plan.features.map((feature) => (
+                      <li key={feature} className="flex items-start gap-2.5">
+                        <Check
+                          className={
+                            plan.highlight
+                              ? "mt-0.5 h-4 w-4 shrink-0 text-brand"
+                              : "mt-0.5 h-4 w-4 shrink-0 text-neutral-600"
+                          }
+                        />
+                        <span className="text-[0.85rem] leading-relaxed text-neutral-300">
+                          {feature}
+                        </span>
+                      </li>
+                    ))}
+                  </ul>
+
+                  <div className="mt-8">
+                    {plan.highlight ? (
+                      <BeamButton className="w-full">{plan.cta}</BeamButton>
+                    ) : (
+                      <button
+                        disabled={plan.name === "Gratuito"}
+                        className="w-full rounded-lg bg-white/[0.08] px-5 py-3 text-sm font-medium text-white transition hover:bg-white/[0.14] disabled:pointer-events-none disabled:opacity-40"
+                      >
+                        {plan.cta}
+                      </button>
+                    )}
+                  </div>
+                </Flashlight>
+              </div>
             </Reveal>
           ))}
         </div>

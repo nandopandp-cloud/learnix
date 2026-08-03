@@ -9,15 +9,16 @@ import {
   Bookmark,
   History,
   Award,
-  Download,
   Settings,
   HelpCircle,
   Crown,
   Shield,
+  X,
 } from "lucide-react";
 
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
+import { usePremiumPromo } from "@/components/app/use-premium-promo";
 
 const PRIMARY = [
   { href: "/inicio", label: "Início", icon: Home },
@@ -26,7 +27,6 @@ const PRIMARY = [
   { href: "/minha-lista", label: "Minha Lista", icon: Bookmark },
   { href: "/historico", label: "Histórico", icon: History },
   { href: "/certificados", label: "Certificados", icon: Award },
-  { href: "/downloads", label: "Downloads", icon: Download },
 ];
 
 const SECONDARY = [
@@ -46,6 +46,8 @@ export function Sidebar({
   collapsed?: boolean;
 }) {
   const pathname = usePathname();
+  const { visible: showPromo, dismiss: dismissPromo } =
+    usePremiumPromo(isPremium);
 
   const isActive = (href: string) =>
     pathname === href || pathname.startsWith(`${href}/`);
@@ -93,10 +95,17 @@ export function Sidebar({
         )}
       </ul>
 
-      {!isPremium && !collapsed && (
+      {showPromo && !collapsed && (
         <div className="mt-auto pt-6">
           <div className="border-gradient relative overflow-hidden rounded-xl bg-surface-1 p-5">
             <div className="pointer-events-none absolute -top-14 -right-14 h-32 w-32 rounded-full bg-brand/20 blur-3xl" />
+            <button
+              onClick={dismissPromo}
+              aria-label="Dispensar oferta Premium"
+              className="absolute top-2.5 right-2.5 flex h-6 w-6 items-center justify-center rounded-md text-neutral-500 transition hover:bg-white/5 hover:text-white"
+            >
+              <X className="h-3.5 w-3.5" />
+            </button>
             <Crown className="h-6 w-6 text-brand" />
             <h3 className="mt-3 font-display text-[0.95rem] font-semibold text-white">
               Seja Premium
@@ -117,7 +126,7 @@ export function Sidebar({
         </div>
       )}
 
-      {!isPremium && collapsed && (
+      {showPromo && collapsed && (
         <div className="mt-auto flex justify-center pt-6">
           <Link
             href="/premium"
