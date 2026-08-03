@@ -3,6 +3,12 @@ import type { Metadata } from "next";
 import { AuthShell } from "../auth-shell";
 import { LoginForm } from "./login-form";
 
+/**
+ * O mosaico do fundo lê o catálogo publicado. Revalida de hora em hora para
+ * refletir cursos novos sem abrir mão do HTML estático nesta rota pública.
+ */
+export const revalidate = 3600;
+
 export const metadata: Metadata = { title: "Entrar" };
 
 export default function EntrarPage() {

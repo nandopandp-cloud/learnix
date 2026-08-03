@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Crown, Mail, Shield, User as UserIcon } from "lucide-react";
+import { Crown, Mail, Shield } from "lucide-react";
 
 import { getCurrentUser } from "@/lib/auth";
 import { PageHeader } from "@/components/app/page-header";
@@ -7,6 +7,7 @@ import { Reveal } from "@/components/ui/reveal";
 import { Button } from "@/components/ui/button";
 import { logoutAction } from "@/app/(auth)/actions";
 import { AvatarForm } from "./avatar-form";
+import { NameForm } from "./name-form";
 
 export const metadata: Metadata = { title: "Configurações" };
 
@@ -32,17 +33,14 @@ export default async function ConfiguracoesPage() {
               <AvatarForm defaultValue={user.avatarUrl} />
 
               <div className="min-w-0 pt-1">
-                <p className="font-display text-lg font-semibold text-white">
-                  {user.name}
-                </p>
-                <p className="truncate text-[0.85rem] text-neutral-500">
+                <NameForm defaultValue={user.name} />
+                <p className="mt-1 truncate text-[0.85rem] text-neutral-500">
                   {user.email}
                 </p>
               </div>
             </div>
 
             <dl className="mt-6 space-y-3 border-t border-white/[0.07] pt-5">
-              <Row icon={UserIcon} label="Nome" value={user.name} />
               <Row icon={Mail} label="E-mail" value={user.email} />
               <Row
                 icon={Shield}

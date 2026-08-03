@@ -34,6 +34,27 @@ export async function updateAvatar(avatarUrl: string) {
   return { success: true };
 }
 
+/** Atualiza o nome de exibição do usuário logado. */
+export async function updateName(name: string) {
+  const user = await getCurrentUser();
+  if (!user) return { error: "Não autenticado." };
+
+  const trimmed = name.trim().replace(/\s+/g, " ");
+  if (trimmed.length < 2) {
+    return { error: "O nome precisa ter ao menos 2 caracteres." };
+  }
+  if (trimmed.length > 60) {
+    return { error: "O nome pode ter no máximo 60 caracteres." };
+  }
+
+  await db.update(users).set({ name: trimmed }).where(eq(users.id, user.id));
+
+  // O nome aparece na topbar e nas saudações, então o layout inteiro
+  // precisa ser revalidado, não só a página de configurações.
+  revalidatePath("/", "layout");
+  return { success: true, name: trimmed };
+}
+
 /** Salva/remove um curso da lista do usuário. Retorna o novo estado. */
 export async function toggleWatchlist(courseId: string) {
   const user = await getCurrentUser();

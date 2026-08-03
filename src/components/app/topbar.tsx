@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 import { Menu, X, PanelLeftClose, PanelLeftOpen } from "lucide-react";
 
 import { cn } from "@/lib/utils";
@@ -16,6 +17,12 @@ export function Topbar({ user }: { user: SessionUser }) {
   const [mobileOpen, setMobileOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
   const { collapsed, toggle } = useSidebar();
+  const pathname = usePathname();
+
+  // Na página do curso a sidebar principal fica oculta no desktop, então o
+  // toggle não controlaria nada — e a marca não tem por que ficar recolhida.
+  const sidebarHidden = /^\/cursos\/[^/]+/.test(pathname);
+  const showMark = collapsed && !sidebarHidden;
 
   /* A topbar ganha fundo sólido assim que a página sai do topo. */
   useEffect(() => {
@@ -52,26 +59,28 @@ export function Topbar({ user }: { user: SessionUser }) {
               className="shrink-0"
             >
               {/* Em telas grandes, a marca acompanha o colapso da sidebar; no mobile é sempre a logo completa. */}
-              <span className={collapsed ? "hidden lg:block" : "hidden"}>
+              <span className={showMark ? "hidden lg:block" : "hidden"}>
                 <LogoMark />
               </span>
-              <span className={collapsed ? "lg:hidden" : "block"}>
+              <span className={showMark ? "lg:hidden" : "block"}>
                 <Logo />
               </span>
             </Link>
 
-            <button
-              onClick={toggle}
-              aria-label={collapsed ? "Expandir menu" : "Recolher menu"}
-              title={collapsed ? "Expandir menu" : "Recolher menu"}
-              className="hidden shrink-0 rounded-lg p-2 text-neutral-400 transition hover:bg-white/5 hover:text-white lg:flex lg:items-center lg:justify-center"
-            >
-              {collapsed ? (
-                <PanelLeftOpen className="h-[1.15rem] w-[1.15rem]" />
-              ) : (
-                <PanelLeftClose className="h-[1.15rem] w-[1.15rem]" />
-              )}
-            </button>
+            {!sidebarHidden && (
+              <button
+                onClick={toggle}
+                aria-label={collapsed ? "Expandir menu" : "Recolher menu"}
+                title={collapsed ? "Expandir menu" : "Recolher menu"}
+                className="hidden shrink-0 rounded-lg p-2 text-neutral-400 transition hover:bg-white/5 hover:text-white lg:flex lg:items-center lg:justify-center"
+              >
+                {collapsed ? (
+                  <PanelLeftOpen className="h-[1.15rem] w-[1.15rem]" />
+                ) : (
+                  <PanelLeftClose className="h-[1.15rem] w-[1.15rem]" />
+                )}
+              </button>
+            )}
           </div>
 
           {/* Centro: busca, centralizada de verdade no header. */}

@@ -1,92 +1,22 @@
-import { cn } from "@/lib/utils";
+import Image from "next/image";
+
+import { cn, formatDuration } from "@/lib/utils";
+import type { CourseCard } from "@/lib/queries";
 
 /**
- * Cards decorativos do fundo do painel de login. São fixos de propósito:
- * o catálogo real ainda é pequeno demais para preencher duas colunas sem
- * repetição óbvia. A arte de cada card é um gradiente em CSS, então o
- * mosaico não depende de nenhuma imagem externa.
+ * Cards de curso reais ao fundo do painel de autenticação. Puramente
+ * decorativo: as capas do catálogo publicado passam em duas colunas
+ * correndo em sentidos opostos.
  */
-type MosaicCard = {
-  category: string;
-  title: string;
-  subtitle: string;
-  lessons: number;
-  /** Progresso da barra inferior, em % — puramente decorativo. */
-  progress: number;
-  art: string;
-};
+export function CourseMosaic({ courses }: { courses: CourseCard[] }) {
+  if (courses.length === 0) return null;
 
-const COLUMN_A: MosaicCard[] = [
-  {
-    category: "Design",
-    title: "UI/UX Design",
-    subtitle: "Do básico ao avançado",
-    lessons: 8,
-    progress: 62,
-    art: "linear-gradient(140deg,#3b1d5e 0%,#7c2d6b 45%,#16121f 100%)",
-  },
-  {
-    category: "Marketing",
-    title: "Marketing Digital",
-    subtitle: "Estratégias que funcionam",
-    lessons: 10,
-    progress: 45,
-    art: "linear-gradient(140deg,#123a52 0%,#2b6e7a 50%,#101a20 100%)",
-  },
-  {
-    category: "Negócios",
-    title: "Gestão de Projetos",
-    subtitle: "Metodologias ágeis",
-    lessons: 6,
-    progress: 78,
-    art: "linear-gradient(140deg,#4a2415 0%,#8a4a22 48%,#1a1310 100%)",
-  },
-  {
-    category: "Dados",
-    title: "Análise de Dados",
-    subtitle: "Do dado à decisão",
-    lessons: 12,
-    progress: 33,
-    art: "linear-gradient(140deg,#14304a 0%,#2f5fa3 50%,#0e1520 100%)",
-  },
-];
+  // Com poucos cursos, alternar o ponto de partida evita que as duas
+  // colunas exibam o mesmo card lado a lado.
+  const half = Math.ceil(courses.length / 2);
+  const columnA = [...courses.slice(0, half), ...courses.slice(half)];
+  const columnB = [...courses.slice(half), ...courses.slice(0, half)];
 
-const COLUMN_B: MosaicCard[] = [
-  {
-    category: "Programação",
-    title: "JavaScript Completo",
-    subtitle: "Do zero ao avançado",
-    lessons: 12,
-    progress: 54,
-    art: "linear-gradient(140deg,#3d2f0d 0%,#8a6b1c 46%,#171308 100%)",
-  },
-  {
-    category: "Fotografia",
-    title: "Fotografia Profissional",
-    subtitle: "Técnicas e edição",
-    lessons: 7,
-    progress: 70,
-    art: "linear-gradient(140deg,#2b1a3f 0%,#5b3a86 50%,#141020 100%)",
-  },
-  {
-    category: "Produtividade",
-    title: "Produtividade Máxima",
-    subtitle: "Organize sua rotina",
-    lessons: 5,
-    progress: 88,
-    art: "linear-gradient(140deg,#123b2c 0%,#2a7a55 50%,#0d1a15 100%)",
-  },
-  {
-    category: "Carreira",
-    title: "Comunicação e Liderança",
-    subtitle: "Presença que convence",
-    lessons: 9,
-    progress: 41,
-    art: "linear-gradient(140deg,#4a1620 0%,#93233a 48%,#1a0e12 100%)",
-  },
-];
-
-export function CourseMosaic() {
   return (
     /* Termina antes do formulário (que ocupa 46% da largura) em vez de usar
        largura fixa, para a emenda nunca cair sobre os campos. */
@@ -96,8 +26,8 @@ export function CourseMosaic() {
     >
       {/* Duas colunas correndo em sentidos opostos, em ritmos diferentes. */}
       <div className="mask-y flex h-full gap-3.5">
-        <MosaicColumn cards={COLUMN_A} duration="58s" />
-        <MosaicColumn cards={COLUMN_B} duration="72s" reverse offset />
+        <MosaicColumn cards={columnA} duration="58s" />
+        <MosaicColumn cards={columnB} duration="72s" reverse offset />
       </div>
 
       {/* Escurece o mosaico e funde com o fundo, deixando o texto legível. */}
@@ -116,60 +46,73 @@ function MosaicColumn({
   reverse = false,
   offset = false,
 }: {
-  cards: MosaicCard[];
+  cards: CourseCard[];
   duration: string;
   reverse?: boolean;
   offset?: boolean;
 }) {
-  // A lista é duplicada para o loop do marquee emendar sem salto.
-  const loop = [...cards, ...cards];
+  // Com catálogo pequeno, repete até ter altura suficiente para o loop
+  // não deixar buraco visível; depois duplica para a emenda do marquee.
+  const filled =
+    cards.length >= 4
+      ? cards
+      : Array.from(
+          { length: Math.ceil(4 / cards.length) },
+          () => cards,
+        ).flat();
+  const loop = [...filled, ...filled];
 
   return (
     <div className={cn("min-w-0 flex-1", offset && "-mt-24")}>
       <div
-        className="flex flex-col gap-4"
+        className="flex flex-col gap-3.5"
         style={{
           animation: `marqueeY ${duration} linear infinite`,
           animationDirection: reverse ? "reverse" : "normal",
         }}
       >
         {loop.map((card, i) => (
-          <MosaicCardItem key={`${card.title}-${i}`} card={card} />
+          <MosaicCardItem key={`${card.id}-${i}`} card={card} />
         ))}
       </div>
     </div>
   );
 }
 
-function MosaicCardItem({ card }: { card: MosaicCard }) {
+function MosaicCardItem({ card }: { card: CourseCard }) {
   return (
     <article className="overflow-hidden rounded-lg bg-surface-1 ring-1 ring-white/[0.06]">
-      <div
-        className="relative aspect-[16/11] w-full"
-        style={{ backgroundImage: card.art }}
-      >
+      <div className="relative aspect-[16/10] w-full bg-surface-2">
+        {card.thumbnailUrl && (
+          <Image
+            src={card.thumbnailUrl}
+            alt=""
+            fill
+            sizes="16rem"
+            className="object-cover"
+          />
+        )}
         <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent" />
       </div>
 
       <div className="p-3">
-        <p className="font-mono text-[0.5rem] tracking-[0.2em] text-neutral-500 uppercase">
-          {card.category}
-        </p>
+        {card.categoryName && (
+          <p className="font-mono text-[0.5rem] tracking-[0.2em] text-neutral-500 uppercase">
+            {card.categoryName}
+          </p>
+        )}
         <h3 className="mt-1 truncate text-[0.76rem] font-medium text-white">
           {card.title}
         </h3>
-        <p className="mt-0.5 truncate text-[0.66rem] text-neutral-500">
-          {card.subtitle}
-        </p>
+        {card.tagline && (
+          <p className="mt-0.5 truncate text-[0.66rem] text-neutral-500">
+            {card.tagline}
+          </p>
+        )}
         <p className="mt-2 text-[0.62rem] text-neutral-600">
-          {card.lessons} aulas
+          {card.lessonCount} {card.lessonCount === 1 ? "aula" : "aulas"}
+          {card.totalDuration > 0 && ` · ${formatDuration(card.totalDuration)}`}
         </p>
-        <div className="mt-1.5 h-[2px] w-full overflow-hidden rounded-full bg-white/[0.07]">
-          <div
-            className="h-full rounded-full bg-brand"
-            style={{ width: `${card.progress}%` }}
-          />
-        </div>
       </div>
     </article>
   );

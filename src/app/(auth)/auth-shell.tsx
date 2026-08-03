@@ -3,6 +3,7 @@ import { PlayCircle, Clock, BookmarkCheck } from "lucide-react";
 
 import { Logo } from "@/components/brand/logo";
 import { Reveal } from "@/components/ui/reveal";
+import { getAllCourses } from "@/lib/queries";
 import { CourseMosaic } from "./course-mosaic";
 
 const HIGHLIGHTS = [
@@ -27,7 +28,7 @@ const HIGHLIGHTS = [
  * Moldura das telas de autenticação: painel editorial à esquerda,
  * formulário à direita. Fundo com grid + halo vermelho da marca.
  */
-export function AuthShell({
+export async function AuthShell({
   eyebrow,
   title,
   subtitle,
@@ -40,6 +41,10 @@ export function AuthShell({
   children: React.ReactNode;
   footer?: React.ReactNode;
 }) {
+  // Catálogo publicado alimenta o mosaico do fundo. É decorativo, então uma
+  // falha aqui não pode derrubar a tela de login.
+  const courses = await getAllCourses().catch(() => []);
+
   return (
     <div className="relative flex min-h-dvh flex-col overflow-hidden bg-void lg:flex-row">
       {/* Halos de fundo */}
@@ -49,7 +54,7 @@ export function AuthShell({
 
       {/* Mosaico de cursos: vive no container raiz para atravessar por baixo
           do formulário, em vez de ser recortado na borda do painel. */}
-      <CourseMosaic />
+      <CourseMosaic courses={courses} />
 
       {/* Painel editorial */}
       <aside className="relative hidden w-[54%] flex-col justify-between p-12 lg:flex xl:p-16">
