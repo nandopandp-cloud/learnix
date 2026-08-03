@@ -1,6 +1,6 @@
 /** Regras de upload compartilhadas entre a API, o admin e o componente de UI. */
 
-export type UploadKind = "image" | "video";
+export type UploadKind = "image" | "video" | "document";
 
 /**
  * Quem pode gerar o token de upload:
@@ -28,7 +28,31 @@ export const UPLOAD_LIMITS: Record<
     accept: ["video/mp4", "video/webm", "video/quicktime"],
     label: "MP4, WEBM ou MOV — até 500 MB",
   },
+  document: {
+    maxBytes: 50 * 1024 * 1024, // 50 MB
+    accept: [
+      "application/pdf",
+      "application/msword",
+      "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+      "application/vnd.ms-excel",
+      "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+      "application/vnd.ms-powerpoint",
+      "application/vnd.openxmlformats-officedocument.presentationml.presentation",
+      "text/plain",
+      "text/csv",
+      "application/zip",
+      "application/x-zip-compressed",
+    ],
+    label: "PDF, Word, Excel, PowerPoint, TXT, CSV ou ZIP — até 50 MB",
+  },
 };
+
+/** Extensão exibida ao aluno, derivada da URL do arquivo. */
+export function fileTypeFromUrl(url: string) {
+  const clean = url.split("?")[0].split("#")[0];
+  const ext = clean.split(".").pop()?.toLowerCase();
+  return ext && ext.length <= 5 && /^[a-z0-9]+$/.test(ext) ? ext : "arquivo";
+}
 
 /** Proporções (largura/altura) usadas no recorte de imagem em cada contexto. */
 export const CROP_ASPECT = {

@@ -175,10 +175,18 @@ export const materials = pgTable(
     }),
     title: text("title").notNull(),
     fileUrl: text("file_url").notNull(),
+    /** extensão do arquivo (pdf, xlsx, zip…) ou "link" para recurso externo */
     fileType: text("file_type").notNull().default("pdf"),
     sizeLabel: text("size_label"),
+    sortOrder: integer("sort_order").notNull().default(0),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
   },
-  (t) => [index("materials_course_idx").on(t.courseId)],
+  (t) => [
+    index("materials_course_idx").on(t.courseId),
+    index("materials_lesson_idx").on(t.lessonId),
+  ],
 );
 
 /* -------------------------------- matrículas ------------------------------- */
@@ -501,3 +509,4 @@ export type Lesson = typeof lessons.$inferSelect;
 export type Module = typeof modules.$inferSelect;
 export type Category = typeof categories.$inferSelect;
 export type Instructor = typeof instructors.$inferSelect;
+export type Material = typeof materials.$inferSelect;

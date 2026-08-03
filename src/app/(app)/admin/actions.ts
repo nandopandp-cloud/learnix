@@ -7,6 +7,7 @@ import { eq, sql } from "drizzle-orm";
 import { db } from "@/db";
 import {
   courses,
+  materials,
   modules,
   lessons,
   categories,
@@ -15,6 +16,7 @@ import {
 } from "@/db/schema";
 import { getCurrentUser, hashPassword } from "@/lib/auth";
 import { slugify } from "@/lib/utils";
+import { fileTypeFromUrl } from "@/lib/uploads";
 
 /** Toda action do admin passa por aqui antes de tocar o banco. */
 async function requireAdmin() {
@@ -63,7 +65,7 @@ export async function upsertCourse(
     isNew: formData.get("isNew") === "on",
     isPublished: formData.get("isPublished") === "on",
     learningPoints,
-    resourceCount: Number(formData.get("resourceCount") ?? 0),
+    // resourceCount é derivado dos materiais cadastrados, não editado à mão.
     updatedLabel: String(formData.get("updatedLabel") ?? "").trim() || null,
   };
 
@@ -372,4 +374,127 @@ export async function deleteUser(userId: string) {
 
   await db.delete(users).where(eq(users.id, userId));
   revalidatePath("/admin/usuarios");
+}
+
+/* -------------------------------- materiais -------------------------------- */
+
+/** Mantém `resourceCount` fiel à quantidade real de materiais do curso. */
+async function syncCourseResourceCount(courseId: string) {
+  await db
+    .update(courses)
+    .set({
+      resourceCount: sql`(
+        select count(*)::int
+        from ${materials} where ${materials.courseId} = ${courseId}
+      )`,
+    })
+    .where(eq(courses.id, courseId));
+}
+
+/** Revalida o admin e as telas do aluno que listam materiais. */
+async function revalidateMaterialPaths(courseId: string) {
+  revalidatePath(`/admin/cursos/${courseId}`);
+
+  const [course] = await db
+    .select({ slug: courses.slug })
+    .from(courses)
+    .where(eq(courses.id, courseId))
+    .limit(1);
+
+  if (course) {
+    revalidatePath(`/cursos/${course.slug}`);
+    revalidatePath(`/assistir/${course.slug}`, "layout");
+  }
+}
+
+/** Lê e valida os campos comuns de criação/edição de material. */
+function readMaterialForm(formData: FormData) {
+  const title = String(formData.get("title") ?? "").trim();
+  const fileUrl = String(formData.get("fileUrl") ?? "").trim();
+  const isLink = String(formData.get("isLink") ?? "") === "on";
+  const rawLesson = String(formData.get("lessonId") ?? "");
+
+  if (title.length < 2) return { error: "Informe o título do material." } as const;
+  if (!fileUrl) {
+    return {
+      error: isLink ? "Informe o endereço do link." : "Envie um arquivo.",
+    } as const;
+  }
+  if (isLink && !/^https?:\/\//i.test(fileUrl)) {
+    return { error: "O link deve começar com http:// ou https://." } as const;
+  }
+
+  const sizeLabel = String(formData.get("sizeLabel") ?? "").trim();
+
+  return {
+    values: {
+      title,
+      fileUrl,
+      fileType: isLink ? "link" : fileTypeFromUrl(fileUrl),
+      sizeLabel: isLink || !sizeLabel ? null : sizeLabel,
+      lessonId: rawLesson || null,
+    },
+  } as const;
+}
+
+export async function createMaterial(
+  _prev: FormState,
+  formData: FormData,
+): Promise<FormState> {
+  await requireAdmin();
+
+  const courseId = String(formData.get("courseId") ?? "");
+  if (!courseId) return { error: "Curso inválido." };
+
+  const parsed = readMaterialForm(formData);
+  if ("error" in parsed) return { error: parsed.error };
+
+  const [{ next }] = await db
+    .select({
+      next: sql<number>`coalesce(max(${materials.sortOrder}) + 1, 0)::int`,
+    })
+    .from(materials)
+    .where(eq(materials.courseId, courseId));
+
+  try {
+    await db
+      .insert(materials)
+      .values({ courseId, ...parsed.values, sortOrder: next });
+  } catch {
+    return { error: "Não foi possível adicionar o material." };
+  }
+
+  await syncCourseResourceCount(courseId);
+  await revalidateMaterialPaths(courseId);
+  return { success: "Material adicionado." };
+}
+
+export async function updateMaterial(
+  _prev: FormState,
+  formData: FormData,
+): Promise<FormState> {
+  await requireAdmin();
+
+  const id = String(formData.get("id") ?? "");
+  const courseId = String(formData.get("courseId") ?? "");
+  if (!id || !courseId) return { error: "Material inválido." };
+
+  const parsed = readMaterialForm(formData);
+  if ("error" in parsed) return { error: parsed.error };
+
+  try {
+    await db.update(materials).set(parsed.values).where(eq(materials.id, id));
+  } catch {
+    return { error: "Não foi possível salvar o material." };
+  }
+
+  await revalidateMaterialPaths(courseId);
+  return { success: "Material atualizado." };
+}
+
+export async function deleteMaterial(materialId: string, courseId: string) {
+  await requireAdmin();
+  await db.delete(materials).where(eq(materials.id, materialId));
+  await syncCourseResourceCount(courseId);
+  await revalidateMaterialPaths(courseId);
 }

@@ -11,12 +11,14 @@ import {
   AlertCircle,
   Link2,
   Crop,
+  FileText,
 } from "lucide-react";
 
 import { cn } from "@/lib/utils";
 import {
   UPLOAD_LIMITS,
   formatBytes,
+  fileTypeFromUrl,
   type UploadKind,
   type UploadScope,
 } from "@/lib/uploads";
@@ -38,6 +40,7 @@ export function FileUpload({
   scope = "admin",
   variant = "default",
   onValueChange,
+  onFileMeta,
   aspect = 16 / 9,
 }: {
   label: string;
@@ -52,6 +55,8 @@ export function FileUpload({
   variant?: "default" | "avatar";
   /** Chamado sempre que a URL final muda — upload concluído, URL colada ou limpeza. */
   onValueChange?: (url: string) => void;
+  /** Nome e tamanho do arquivo escolhido, antes do upload (vídeo e documento). */
+  onFileMeta?: (meta: { name: string; size: number }) => void;
   /** Proporção do recorte para imagens (largura/altura). Ignorado para vídeo. */
   aspect?: number;
 }) {
@@ -77,7 +82,8 @@ export function FileUpload({
   } | null>(null);
 
   const limits = UPLOAD_LIMITS[kind];
-  const Icon = kind === "video" ? VideoIcon : ImageIcon;
+  const Icon =
+    kind === "video" ? VideoIcon : kind === "document" ? FileText : ImageIcon;
 
   const onPick = () => inputRef.current?.click();
 
@@ -117,8 +123,9 @@ export function FileUpload({
       return;
     }
 
-    // Vídeo não passa por recorte — sobe direto.
-    if (kind === "video") {
+    // Só imagem passa por recorte; vídeo e documento sobem direto.
+    if (kind === "video" || kind === "document") {
+      onFileMeta?.({ name: file.name, size: file.size });
       void uploadBlob(file, file.name);
       return;
     }
@@ -396,6 +403,20 @@ function MediaPreview({
         <div className="relative aspect-video w-full overflow-hidden bg-surface-2">
           {/* eslint-disable-next-line @next/next/no-img-element -- previews podem apontar para qualquer host externo */}
           <img src={url} alt="" className="h-full w-full object-cover" />
+        </div>
+      ) : kind === "document" ? (
+        <div className="flex items-center gap-3 bg-surface-2 px-4 py-3.5">
+          <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-brand/10 ring-1 ring-brand/20">
+            <FileText className="h-4 w-4 text-brand" />
+          </span>
+          <span className="min-w-0 flex-1">
+            <span className="block truncate text-[0.82rem] text-white">
+              {decodeURIComponent(url.split("/").pop() ?? "Arquivo enviado")}
+            </span>
+            <span className="text-[0.72rem] text-neutral-500 uppercase">
+              {fileTypeFromUrl(url)}
+            </span>
+          </span>
         </div>
       ) : (
         <video src={url} controls className="aspect-video w-full bg-black" />

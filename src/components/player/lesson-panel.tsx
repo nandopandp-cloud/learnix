@@ -11,6 +11,7 @@ import {
   Download,
   Loader2,
   ChevronDown,
+  ExternalLink,
 } from "lucide-react";
 
 import { cn, formatCount } from "@/lib/utils";
@@ -270,28 +271,44 @@ function MaterialsList({ materials }: { materials: Material[] }) {
 
   return (
     <ul className="space-y-2.5">
-      {materials.map((material) => (
-        <li key={material.id}>
-          <a
-            href={material.fileUrl}
-            className="group flex items-center gap-4 rounded-xl bg-surface-1 p-4 ring-1 ring-white/[0.07] transition-all duration-300 hover:bg-surface-2 hover:ring-white/15"
-          >
-            <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-brand/10 ring-1 ring-brand/20">
-              <FileText className="h-[1.1rem] w-[1.1rem] text-brand" />
-            </span>
-            <span className="min-w-0 flex-1">
-              <span className="block truncate text-[0.88rem] font-medium text-white">
-                {material.title}
+      {materials.map((material) => {
+        const isLink = material.fileType === "link";
+        return (
+          <li key={material.id}>
+            <a
+              href={material.fileUrl}
+              {...(isLink
+                ? { target: "_blank", rel: "noopener noreferrer" }
+                : { download: true })}
+              className="group flex items-center gap-4 rounded-xl bg-surface-1 p-4 ring-1 ring-white/[0.07] transition-all duration-300 hover:bg-surface-2 hover:ring-white/15"
+            >
+              <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-brand/10 ring-1 ring-brand/20">
+                {isLink ? (
+                  <ExternalLink className="h-[1.1rem] w-[1.1rem] text-brand" />
+                ) : (
+                  <FileText className="h-[1.1rem] w-[1.1rem] text-brand" />
+                )}
               </span>
-              <span className="text-[0.73rem] text-neutral-500 uppercase">
-                {material.fileType}
-                {material.sizeLabel && ` · ${material.sizeLabel}`}
+              <span className="min-w-0 flex-1">
+                <span className="block truncate text-[0.88rem] font-medium text-white">
+                  {material.title}
+                </span>
+                <span className="text-[0.73rem] text-neutral-500">
+                  <span className="uppercase">
+                    {isLink ? "Link externo" : material.fileType}
+                  </span>
+                  {material.sizeLabel && ` · ${material.sizeLabel}`}
+                </span>
               </span>
-            </span>
-            <Download className="h-4 w-4 shrink-0 text-neutral-500 transition group-hover:text-white" />
-          </a>
-        </li>
-      ))}
+              {isLink ? (
+                <ExternalLink className="h-4 w-4 shrink-0 text-neutral-500 transition group-hover:text-white" />
+              ) : (
+                <Download className="h-4 w-4 shrink-0 text-neutral-500 transition group-hover:text-white" />
+              )}
+            </a>
+          </li>
+        );
+      })}
     </ul>
   );
 }

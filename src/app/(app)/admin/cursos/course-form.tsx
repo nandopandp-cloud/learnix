@@ -177,13 +177,6 @@ export function CourseForm({
             className="sm:col-span-2"
           />
           <TextInput
-            label="Quantidade de materiais"
-            name="resourceCount"
-            type="number"
-            min={0}
-            defaultValue={course?.resourceCount ?? 0}
-          />
-          <TextInput
             label="Atualizado em"
             name="updatedLabel"
             defaultValue={course?.updatedLabel ?? ""}

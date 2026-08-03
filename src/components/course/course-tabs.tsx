@@ -10,6 +10,7 @@ import {
   ChevronDown,
   Clock,
   Download,
+  ExternalLink,
 } from "lucide-react";
 
 import { cn, formatDuration, formatTimecode } from "@/lib/utils";
@@ -328,28 +329,44 @@ function MaterialsTab({ course }: { course: CourseDetail }) {
 
   return (
     <ul className="space-y-2.5">
-      {course.materials.map((material) => (
-        <li key={material.id}>
-          <a
-            href={material.fileUrl}
-            className="group flex items-center gap-4 rounded-xl bg-surface-1 p-4 ring-1 ring-white/[0.07] transition-all duration-300 hover:bg-surface-2 hover:ring-white/15"
-          >
-            <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg bg-brand/10 ring-1 ring-brand/20">
-              <FileText className="h-5 w-5 text-brand" />
-            </span>
-            <span className="min-w-0 flex-1">
-              <span className="block truncate text-[0.9rem] font-medium text-white">
-                {material.title}
+      {course.materials.map((material) => {
+        const isLink = material.fileType === "link";
+        return (
+          <li key={material.id}>
+            <a
+              href={material.fileUrl}
+              {...(isLink
+                ? { target: "_blank", rel: "noopener noreferrer" }
+                : { download: true })}
+              className="group flex items-center gap-4 rounded-xl bg-surface-1 p-4 ring-1 ring-white/[0.07] transition-all duration-300 hover:bg-surface-2 hover:ring-white/15"
+            >
+              <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg bg-brand/10 ring-1 ring-brand/20">
+                {isLink ? (
+                  <ExternalLink className="h-5 w-5 text-brand" />
+                ) : (
+                  <FileText className="h-5 w-5 text-brand" />
+                )}
               </span>
-              <span className="text-[0.75rem] text-neutral-500 uppercase">
-                {material.fileType}
-                {material.sizeLabel && ` · ${material.sizeLabel}`}
+              <span className="min-w-0 flex-1">
+                <span className="block truncate text-[0.9rem] font-medium text-white">
+                  {material.title}
+                </span>
+                <span className="text-[0.75rem] text-neutral-500">
+                  <span className="uppercase">
+                    {isLink ? "Link externo" : material.fileType}
+                  </span>
+                  {material.sizeLabel && ` · ${material.sizeLabel}`}
+                </span>
               </span>
-            </span>
-            <Download className="h-4 w-4 shrink-0 text-neutral-500 transition group-hover:text-white" />
-          </a>
-        </li>
-      ))}
+              {isLink ? (
+                <ExternalLink className="h-4 w-4 shrink-0 text-neutral-500 transition group-hover:text-white" />
+              ) : (
+                <Download className="h-4 w-4 shrink-0 text-neutral-500 transition group-hover:text-white" />
+              )}
+            </a>
+          </li>
+        );
+      })}
     </ul>
   );
 }

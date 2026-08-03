@@ -299,7 +299,8 @@ export async function getCourseBySlug(slug: string, userId?: string) {
   const courseMaterials = await db
     .select()
     .from(materials)
-    .where(eq(materials.courseId, course.id));
+    .where(eq(materials.courseId, course.id))
+    .orderBy(materials.sortOrder);
 
   /** Próxima aula a assistir: a primeira não concluída. */
   const nextLesson =
@@ -356,11 +357,15 @@ export async function getLessonView(
     .select()
     .from(materials)
     .where(
-      or(
-        eq(materials.lessonId, current.id),
-        and(eq(materials.courseId, course.id), sql`${materials.lessonId} is null`),
+      and(
+        eq(materials.courseId, course.id),
+        or(
+          eq(materials.lessonId, current.id),
+          sql`${materials.lessonId} is null`,
+        ),
       )!,
-    );
+    )
+    .orderBy(materials.sortOrder);
 
   const [{ likeCount }] = await db
     .select({ likeCount: sql<number>`count(*)::int` })
