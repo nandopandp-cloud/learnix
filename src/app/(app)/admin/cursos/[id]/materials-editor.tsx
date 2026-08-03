@@ -1,7 +1,6 @@
 "use client";
 
-import { useActionState, useState, useTransition } from "react";
-import { useFormStatus } from "react-dom";
+import { useState, useTransition } from "react";
 import {
   Plus,
   Trash2,
@@ -16,7 +15,6 @@ import {
   createMaterial,
   updateMaterial,
   deleteMaterial,
-  type FormState,
 } from "../../actions";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { FormMessage } from "@/components/ui/form-controls";
@@ -191,19 +189,25 @@ function MaterialForm({
   material?: Material;
   onDone: () => void;
 }) {
-  const [state, formAction] = useActionState<FormState, FormData>(
-    material ? updateMaterial : createMaterial,
-    undefined,
-  );
+  const [error, setError] = useState<string | null>(null);
+  const [saving, startSaving] = useTransition();
 
   const [isLink, setIsLink] = useState(material?.fileType === "link");
   const [sizeLabel, setSizeLabel] = useState(material?.sizeLabel ?? "");
 
+  const action = material ? updateMaterial : createMaterial;
+
   return (
     <form
       action={(fd) => {
-        formAction(fd);
-        onDone();
+        setError(null);
+        // Só fecha o formulário depois que a action responde: fechar antes
+        // desmonta o form e descarta o erro devolvido pelo servidor.
+        startSaving(async () => {
+          const state = await action(undefined, fd);
+          if (state?.error) setError(state.error);
+          else onDone();
+        });
       }}
       className="space-y-3"
     >
@@ -284,32 +288,37 @@ function MaterialForm({
         ))}
       </select>
 
-      <FormMessage error={state?.error} />
+      <FormMessage error={error ?? undefined} />
 
       <div className="flex justify-end gap-2">
         <button
           type="button"
           onClick={onDone}
-          className="rounded-lg px-3 py-1.5 text-[0.8rem] text-neutral-400 transition hover:text-white"
+          disabled={saving}
+          className="rounded-lg px-3 py-1.5 text-[0.8rem] text-neutral-400 transition hover:text-white disabled:opacity-50"
         >
           Cancelar
         </button>
-        <SaveButton editing={Boolean(material)} />
+        <SaveButton editing={Boolean(material)} saving={saving} />
       </div>
     </form>
   );
 }
 
-function SaveButton({ editing }: { editing: boolean }) {
-  const { pending } = useFormStatus();
-
+function SaveButton({
+  editing,
+  saving,
+}: {
+  editing: boolean;
+  saving: boolean;
+}) {
   return (
     <button
       type="submit"
-      disabled={pending}
+      disabled={saving}
       className="flex items-center gap-1.5 rounded-lg bg-brand px-3.5 py-1.5 text-[0.8rem] font-medium text-white transition hover:bg-brand-bright disabled:opacity-50"
     >
-      {pending ? (
+      {saving ? (
         <Loader2 className="h-3.5 w-3.5 animate-spin" />
       ) : (
         <Check className="h-3.5 w-3.5" />

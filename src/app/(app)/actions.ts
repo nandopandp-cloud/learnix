@@ -18,6 +18,25 @@ import {
   watchlist,
 } from "@/db/schema";
 import { getCurrentUser } from "@/lib/auth";
+import { canAccessPremium } from "@/lib/queries";
+
+/**
+ * Uma aula paga não pode registrar progresso nem matrícula por chamada direta
+ * à server action — a trava da UI sozinha seria contornável.
+ */
+async function isLessonLocked(lessonId: string) {
+  const user = await getCurrentUser();
+  if (canAccessPremium(user)) return false;
+
+  const [row] = await db
+    .select({ isPremium: courses.isPremium, isFree: lessons.isFree })
+    .from(lessons)
+    .innerJoin(courses, eq(lessons.courseId, courses.id))
+    .where(eq(lessons.id, lessonId))
+    .limit(1);
+
+  return Boolean(row && row.isPremium && !row.isFree);
+}
 
 /** Atualiza a foto de perfil do usuário logado. */
 export async function updateAvatar(avatarUrl: string) {
@@ -103,6 +122,7 @@ export async function saveProgress(
 ) {
   const user = await getCurrentUser();
   if (!user) return;
+  if (await isLessonLocked(lessonId)) return;
 
   await db
     .insert(lessonProgress)
@@ -136,6 +156,7 @@ export async function saveProgress(
 export async function toggleLessonComplete(lessonId: string, courseId: string) {
   const user = await getCurrentUser();
   if (!user) return { completed: false };
+  if (await isLessonLocked(lessonId)) return { completed: false };
 
   const [existing] = await db
     .select()

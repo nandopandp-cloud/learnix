@@ -31,11 +31,20 @@ export default async function WatchPage({
   const view = await getLessonView(slug, lessonSlug, user.id);
   if (!view) notFound();
 
-  const { course, lesson, materials, position, completed, likeCount, liked, next } =
-    view;
+  const {
+    course,
+    lesson,
+    materials,
+    position,
+    completed,
+    likeCount,
+    liked,
+    next,
+    locked,
+  } = view;
 
-  // Abrir a aula matricula o aluno e atualiza o "último acesso".
-  await ensureEnrollment(course.id);
+  // Aula bloqueada não conta como início de curso — não matricula.
+  if (!locked) await ensureEnrollment(course.id);
 
   const nextHref = next ? `/assistir/${course.slug}/${next.slug}` : null;
 
@@ -55,6 +64,7 @@ export default async function WatchPage({
         likeCount={likeCount}
         liked={liked}
         nextHref={nextHref}
+        locked={locked}
       />
     </>
   );

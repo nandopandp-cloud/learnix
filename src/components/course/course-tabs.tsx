@@ -11,6 +11,7 @@ import {
   Clock,
   Download,
   ExternalLink,
+  Lock,
 } from "lucide-react";
 
 import { cn, formatDuration, formatTimecode } from "@/lib/utils";
@@ -317,6 +318,17 @@ function ContentTab({ course }: { course: CourseDetail }) {
 /* -------------------------------- materiais ------------------------------- */
 
 function MaterialsTab({ course }: { course: CourseDetail }) {
+  // Bloqueado ≠ vazio: sem isso o assinante em potencial veria "em breve".
+  if (course.materialsLocked) {
+    return (
+      <EmptyState
+        icon={Lock}
+        title="Materiais exclusivos para assinantes"
+        description="Assine o Premium para baixar os PDFs, planilhas e links de apoio deste curso."
+      />
+    );
+  }
+
   if (course.materials.length === 0) {
     return (
       <EmptyState

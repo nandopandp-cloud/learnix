@@ -3,6 +3,7 @@ import "server-only";
 import { and, desc, eq, ilike, inArray, or, sql, asc } from "drizzle-orm";
 
 import { db } from "@/db";
+import { getCurrentUser } from "@/lib/auth";
 import {
   answers,
   categories,
@@ -19,6 +20,21 @@ import {
   users,
   watchlist,
 } from "@/db/schema";
+
+/**
+ * Regra única de acesso a conteúdo pago.
+ *
+ * Curso premium só libera vídeo e materiais para assinante ou admin; aulas
+ * marcadas como `isFree` continuam abertas como amostra. A checagem vive aqui,
+ * e não na UI, porque esconder o player no client ainda entregaria a `videoUrl`
+ * no payload da página.
+ */
+export function canAccessPremium(user: {
+  role: string;
+  isPremium: boolean;
+} | null) {
+  return Boolean(user && (user.isPremium || user.role === "admin"));
+}
 
 /** Card de curso com o mínimo necessário para as fileiras do dashboard. */
 export type CourseCard = {
@@ -296,11 +312,17 @@ export async function getCourseBySlug(slug: string, userId?: string) {
         .limit(1)
     : [];
 
-  const courseMaterials = await db
-    .select()
-    .from(materials)
-    .where(eq(materials.courseId, course.id))
-    .orderBy(materials.sortOrder);
+  // Curso premium: materiais só saem do banco para quem tem acesso.
+  const hasPremiumAccess = canAccessPremium(await getCurrentUser());
+  const materialsLocked = course.isPremium && !hasPremiumAccess;
+
+  const courseMaterials = materialsLocked
+    ? []
+    : await db
+        .select()
+        .from(materials)
+        .where(eq(materials.courseId, course.id))
+        .orderBy(materials.sortOrder);
 
   /** Próxima aula a assistir: a primeira não concluída. */
   const nextLesson =
@@ -313,6 +335,8 @@ export async function getCourseBySlug(slug: string, userId?: string) {
     lessons: lessonRows,
     lessonCount: lessonRows.length,
     materials: courseMaterials,
+    materialsLocked,
+    hasPremiumAccess,
     progress,
     completedCount,
     isEnrolled: Boolean(enrollment),
@@ -353,19 +377,24 @@ export async function getLessonView(
     )
     .limit(1);
 
-  const lessonMaterials = await db
-    .select()
-    .from(materials)
-    .where(
-      and(
-        eq(materials.courseId, course.id),
-        or(
-          eq(materials.lessonId, current.id),
-          sql`${materials.lessonId} is null`,
-        ),
-      )!,
-    )
-    .orderBy(materials.sortOrder);
+  // Aula bloqueada: curso premium, sem acesso e sem a marca de aula gratuita.
+  const locked = course.isPremium && !course.hasPremiumAccess && !current.isFree;
+
+  const lessonMaterials = locked
+    ? []
+    : await db
+        .select()
+        .from(materials)
+        .where(
+          and(
+            eq(materials.courseId, course.id),
+            or(
+              eq(materials.lessonId, current.id),
+              sql`${materials.lessonId} is null`,
+            ),
+          )!,
+        )
+        .orderBy(materials.sortOrder);
 
   const [{ likeCount }] = await db
     .select({ likeCount: sql<number>`count(*)::int` })
@@ -382,7 +411,9 @@ export async function getLessonView(
 
   return {
     course,
-    lesson: current,
+    // Sem acesso a `videoUrl` o player não tem o que tocar, mesmo que a UI falhe.
+    lesson: locked ? { ...current, videoUrl: null } : current,
+    locked,
     materials: lessonMaterials,
     position: progress?.positionSeconds ?? 0,
     completed: progress?.completed ?? false,
